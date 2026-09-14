@@ -8,9 +8,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "care_templates")
+@Table(name = "care_templates", uniqueConstraints = @UniqueConstraint(
+        name = "uk_care_templates_flower_care", columnNames = {"flower_type_id", "care_name"}))
 public class CareTemplate {
 
     @Id
@@ -25,6 +27,9 @@ public class CareTemplate {
 
     @Column(name = "care_name", nullable = false, length = 50)
     private String careName;
+
+    @Column(name = "care_description", length = 500)
+    private String careDescription;
 
     @Column(name = "interval_days", nullable = false)
     private Integer intervalDays;
@@ -59,6 +64,14 @@ public class CareTemplate {
         return intervalDays;
     }
 
+    public String getCareDescription() {
+        return careDescription;
+    }
+
+    public void setCareDescription(String careDescription) {
+        this.careDescription = careDescription;
+    }
+
     public void setIntervalDays(Integer intervalDays) {
         this.intervalDays = intervalDays;
     }
@@ -71,4 +84,3 @@ public class CareTemplate {
         this.displayOrder = displayOrder;
     }
 }
-

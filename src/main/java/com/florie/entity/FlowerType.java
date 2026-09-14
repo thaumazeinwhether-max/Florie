@@ -22,6 +22,10 @@ public class FlowerType {
     @Column(name = "illustration_path", nullable = false, length = 255)
     private String illustrationPath;
 
+    // 水量・注意事項は、完了するタスクではなく常時案内として保持する。
+    @Column(name = "care_guidance", length = 500)
+    private String careGuidance;
+
     @Column(name = "display_order", nullable = false)
     private Integer displayOrder;
 
@@ -52,8 +56,15 @@ public class FlowerType {
         return displayOrder;
     }
 
+    public String getCareGuidance() {
+        return careGuidance;
+    }
+
+    public void setCareGuidance(String careGuidance) {
+        this.careGuidance = careGuidance;
+    }
+
     public void setDisplayOrder(Integer displayOrder) {
         this.displayOrder = displayOrder;
     }
 }
-
