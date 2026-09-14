@@ -1,0 +1,23 @@
+# ビルド結果
+/target/
+
+# エディタの個人設定
+/.idea/
+/.vscode/
+*.iml
+.classpath
+.project
+.settings/
+
+# ローカルの秘密情報とログ
+.env
+.env.*
+!.env.example
+/src/main/resources/application-local.properties
+/src/main/resources/application-local.yml
+/src/main/resources/application-local.yaml
+*.log
+
+# OSが作るファイル
+Thumbs.db
+.DS_Store

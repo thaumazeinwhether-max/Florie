@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ホーム | Florie</title>
+    <link rel="stylesheet" th:href="@{/css/auth.css}">
+</head>
+<body>
+<header class="home-header"><div th:replace="~{fragments/logo :: logo}"></div></header>
+<main class="home-content">
+    <h1>ホーム</h1>
+    <p><span th:text="${nickname}"></span>さん、こんにちは。</p>
+    <p>花のお世話機能は、これから実装します。</p>
+    <form th:action="@{/logout}" method="post">
+        <button class="primary-button" type="submit">ログアウト</button>
+    </form>
+</main>
+</body>
+</html>

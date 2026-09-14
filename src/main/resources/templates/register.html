@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>新規登録 | Florie</title>
+    <link rel="stylesheet" th:href="@{/css/auth.css}">
+</head>
+<body>
+<main class="auth-page register-page">
+    <div th:replace="~{fragments/logo :: logo}"></div>
+    <h1 class="visually-hidden">新規登録</h1>
+    <form th:action="@{/register}" th:object="${userRegisterForm}" method="post" novalidate>
+        <div class="error notice" role="alert" th:if="${#fields.hasGlobalErrors()}">
+            <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+        </div>
+        <div class="field">
+            <label for="nickname">ニックネーム</label>
+            <input id="nickname" type="text" th:field="*{nickname}" maxlength="20" autocomplete="nickname" required aria-describedby="nickname-error">
+            <p id="nickname-error" class="error" th:errors="*{nickname}"></p>
+        </div>
+        <div class="field">
+            <label for="email">メールアドレス</label>
+            <input id="email" type="email" th:field="*{email}" maxlength="255" autocomplete="username" required aria-describedby="email-error">
+            <p id="email-error" class="error" th:errors="*{email}"></p>
+        </div>
+        <div class="field">
+            <label for="password">パスワード</label>
+            <!-- 再表示時に入力値をHTMLへ埋め込まないよう、パスワードにはth:fieldを使用しない。 -->
+            <input id="password" name="password" type="password" autocomplete="new-password" required aria-describedby="password-hint password-error password-byte-error">
+            <small id="password-hint">8文字以上（UTF-8で72バイト以内）</small>
+            <p id="password-error" class="error" th:errors="*{password}"></p>
+            <p id="password-byte-error" class="error" th:errors="*{passwordWithinByteLimit}"></p>
+        </div>
+        <div class="field">
+            <label for="passwordConfirmation">パスワード（確認）</label>
+            <input id="passwordConfirmation" name="passwordConfirmation" type="password" autocomplete="new-password" required aria-describedby="confirmation-error matching-error">
+            <p id="confirmation-error" class="error" th:errors="*{passwordConfirmation}"></p>
+            <p id="matching-error" class="error" th:errors="*{passwordsMatching}"></p>
+        </div>
+        <button class="primary-button" type="submit">登録</button>
+    </form>
+    <div class="auth-navigation">
+        <p>すでにアカウントを持っている方はこちら</p>
+        <a th:href="@{/login}">ログイン</a>
+    </div>
+</main>
+</body>
+</html>
