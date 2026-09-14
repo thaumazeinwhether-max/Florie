@@ -5,16 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ホーム | Florie</title>
     <link rel="stylesheet" th:href="@{/css/auth.css}">
+    <link rel="stylesheet" th:href="@{/css/flower.css}">
 </head>
 <body>
-<header class="home-header"><div th:replace="~{fragments/logo :: logo}"></div></header>
-<main class="home-content">
-    <h1>ホーム</h1>
-    <p><span th:text="${nickname}"></span>さん、こんにちは。</p>
-    <p>花のお世話機能は、これから実装します。</p>
-    <form th:action="@{/logout}" method="post">
-        <button class="primary-button" type="submit">ログアウト</button>
-    </form>
-</main>
+<div class="flower-page">
+    <header th:replace="~{fragments/flower-layout :: header}"></header>
+    <div class="session-bar">
+        <span><span th:text="${nickname}"></span>さん</span>
+        <form th:action="@{/logout}" method="post"><button type="submit">ログアウト</button></form>
+    </div>
+    <main>
+        <h1 class="visually-hidden">ホーム</h1>
+        <p class="notice home-notice" role="status" th:if="${param.flowerRegistered}">お花を登録しました。</p>
+        <p class="notice home-notice" role="status" th:if="${param.alreadyRegistered}">お世話中のお花がいるため、新しいお花は登録できません。</p>
+        <div th:if="${currentFlower == null}" class="empty-flower-space" aria-hidden="true"></div>
+        <section th:if="${currentFlower != null}" class="current-flower" aria-label="お世話中のお花">
+            <h2 th:text="${currentFlower.flowerType.flowerName}"></h2>
+            <p class="flower-nickname" th:text="${currentFlower.flowerNickname}"></p>
+            <div th:replace="~{fragments/flower-layout :: flowerPlaceholder}"></div>
+        </section>
+        <section class="home-lower" th:classappend="${currentFlower == null} ? 'home-empty' : 'home-active'">
+            <div th:if="${currentFlower == null}" class="empty-flower-message">
+                <p>お花がいません<br>新しいお花を<br>登録しましょう</p>
+            </div>
+            <div th:if="${currentFlower != null}" class="home-care-guide">
+                <h2>お世話のヒント</h2>
+                <p class="guidance-card" th:text="${currentFlower.flowerType.careGuidance}"></p>
+                <p class="care-note">直射日光と冷暖房の風が直接当たる場所を避け、涼しい場所に飾りましょう。</p>
+                <p th:replace="~{fragments/flower-layout :: preservativeNote}"></p>
+                <p class="care-note">お世話一覧・完了操作は準備中です。</p>
+            </div>
+            <nav class="flower-nav home-nav" aria-label="画面移動">
+                <a class="round-link" th:href="@{/home}" aria-current="page">Home</a>
+                <a th:if="${currentFlower == null}" class="round-link middle-link" th:href="@{/flowers/register}">New<br>Flower</a>
+                <button th:if="${currentFlower != null}" class="round-link middle-link" type="button" disabled>Owakare<small>準備中</small></button>
+                <button class="round-link" type="button" disabled>Garden<small>準備中</small></button>
+            </nav>
+        </section>
+    </main>
+</div>
 </body>
 </html>

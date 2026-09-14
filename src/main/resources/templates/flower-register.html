@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>お花を登録 | Florie</title>
+    <link rel="stylesheet" th:href="@{/css/auth.css}">
+    <link rel="stylesheet" th:href="@{/css/flower.css}">
+</head>
+<body>
+<div class="flower-page">
+    <header th:replace="~{fragments/flower-layout :: header}"></header>
+    <main class="flower-register-content">
+        <h1>お花を登録</h1>
+        <form th:action="@{/flowers}" th:object="${flowerRegisterForm}" method="post" novalidate>
+            <div class="error notice" role="alert" th:if="${#fields.hasGlobalErrors()}">
+                <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+            </div>
+            <fieldset class="flower-choices">
+                <legend class="visually-hidden">お花の種類を一つ選択してください</legend>
+                <p class="error" id="flower-type-error" th:errors="*{flowerTypeId}"></p>
+                <label class="flower-choice" th:each="type : ${flowerTypes}">
+                    <input type="radio" th:field="*{flowerTypeId}" th:value="${type.flowerTypeId}" required aria-describedby="flower-type-error">
+                    <span class="choice-name" th:text="${type.flowerName}"></span>
+                    <span class="choice-guidance" th:text="${type.careGuidance}"></span>
+                </label>
+                <p th:if="${#lists.isEmpty(flowerTypes)}" class="error">お花の種類を読み込めませんでした。時間をおいて開き直してください。</p>
+            </fieldset>
+            <div class="field flower-nickname-field">
+                <label for="flowerNickname">お花のニックネーム</label>
+                <input id="flowerNickname" type="text" th:field="*{flowerNickname}" maxlength="20"
+                       placeholder="ニックネームを入力" required aria-describedby="flower-nickname-error">
+                <p id="flower-nickname-error" class="error" th:errors="*{flowerNickname}"></p>
+            </div>
+            <section class="preparation-guide" aria-labelledby="preparation-title">
+                <h2 id="preparation-title">お迎えする日の準備</h2>
+                <p>はじめに、花瓶を洗い、水につかる葉を取り除きましょう。茎先を少し切って、花に合った量の水に挿してください。すでに準備が済んでいる場合は、やり直さなくて大丈夫です。</p>
+                <p th:replace="~{fragments/flower-layout :: preservativeNote}"></p>
+            </section>
+            <button class="primary-button" type="submit" th:disabled="${#lists.isEmpty(flowerTypes)}">登録する</button>
+        </form>
+    </main>
+    <nav th:replace="~{fragments/flower-layout :: homeLink}"></nav>
+</div>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<body>
+<header th:fragment="header" class="flower-header">
+    <div th:replace="~{fragments/logo :: logo}"></div>
+</header>
+<nav th:fragment="homeLink" class="flower-nav" aria-label="画面移動">
+    <a class="round-link" th:href="@{/home}">Home</a>
+</nav>
+<div th:fragment="flowerPlaceholder" class="flower-placeholder" aria-hidden="true">
+    <!-- 最終素材を用意するまで使う、共通のシンプルな一輪の仮表示。 -->
+    <svg viewBox="0 0 180 230">
+        <path d="M90 80Q82 133 92 182" fill="none" stroke="#768f7e" stroke-width="6" stroke-linecap="round"/>
+        <path d="M89 145Q112 110 139 126Q123 157 89 145Z" fill="#adc0b4" stroke="#768f7e" stroke-width="2"/>
+        <path d="M83 114Q58 89 40 112Q57 137 83 129Z" fill="#adc0b4" stroke="#768f7e" stroke-width="2"/>
+        <path d="M90 31C62 8 42 43 54 62C25 74 46 106 70 101C75 127 112 127 117 101C147 104 159 69 133 58C141 28 108 12 90 31Z" fill="#efd0c4" stroke="#b49185" stroke-width="2"/>
+        <circle cx="92" cy="72" r="22" fill="#eee0b8" stroke="#b49185" stroke-width="2"/>
+        <path d="M69 167H111L119 211Q120 223 107 223H73Q60 223 61 211Z" fill="#e9e7db" fill-opacity=".8" stroke="#928978" stroke-width="2"/>
+    </svg>
+</div>
+<p th:fragment="preservativeNote" class="care-note">この予定は、水道水だけで飾る場合の目安です。切り花用延命剤を使う場合は、製品に書かれた薄め方と水替え方法を優先してください。</p>
+</body>
+</html>
