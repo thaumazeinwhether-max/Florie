@@ -55,6 +55,36 @@ public class FlowerService {
     }
 
     @Transactional
+    public void endFlower(String email, Long flowerId) {
+        // 登録・お世話完了と同じ順番でロックし、同じ利用者の更新を順番に処理する。
+        User user = userRepository.findByEmailForUpdate(UserService.normalizeEmail(email))
+                .orElseThrow(() -> new FlowerEndException("お別れできるお花が見つかりません。"));
+        Flower flower = flowerRepository.findByFlowerIdAndUserUserId(flowerId, user.getUserId())
+                .orElseThrow(() -> new FlowerEndException("お別れできるお花が見つかりません。"));
+        checkActiveFlower(flower);
+        flower.setStatus(FlowerStatus.ENDED);
+        flower.setEndedOn(LocalDate.now(clock));
+        // 花と関連する予定・履歴は残し、状態と終了日だけを同時に保存する。
+        flowerRepository.saveAndFlush(flower);
+    }
+
+    @Transactional(readOnly = true)
+    public Flower getFlowerForEnd(String email, Long flowerId) {
+        User user = userRepository.findByEmail(UserService.normalizeEmail(email))
+                .orElseThrow(() -> new FlowerEndException("お別れできるお花が見つかりません。"));
+        Flower flower = flowerRepository.findByFlowerIdAndUserUserId(flowerId, user.getUserId())
+                .orElseThrow(() -> new FlowerEndException("お別れできるお花が見つかりません。"));
+        checkActiveFlower(flower);
+        return flower;
+    }
+
+    private void checkActiveFlower(Flower flower) {
+        if (flower.getStatus() != FlowerStatus.ACTIVE) {
+            throw new FlowerEndException("このお花とのお別れは完了しています。");
+        }
+    }
+
+    @Transactional
     public void registerFlower(String email, FlowerRegisterForm form) {
         if (!validator.validate(form).isEmpty()) {
             throw new FlowerRegistrationException("入力内容を確認してください。");

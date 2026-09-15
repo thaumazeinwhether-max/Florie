@@ -1,6 +1,6 @@
 # Florie
 
-一輪挿しの花のお世話を支援するWebアプリです。現在はDB基盤、認証、花登録、今日のお世話一覧、お世話完了まで実装しています。お別れ・お花畑は未実装です。SQLのDBへの反映は手動で行います。
+一輪挿しの花のお世話を支援するWebアプリです。現在はDB基盤、認証、花登録、今日のお世話一覧、お世話完了、お別れまで実装しています。お花畑は未実装です。SQLのDBへの反映は手動で行います。
 
 ## 開発環境
 
@@ -396,3 +396,51 @@ GROUP BY t.care_task_id, t.care_name, t.interval_days, t.next_care_date;
 二重送信は、完了前に同じホームを2タブ開き、一つ目で完了した後、古い二つ目の画面でも同じタスクの「できた」を押して確認できます。二つ目は拒否され、履歴件数と次回日は増えません。ログアウトした後、古い画面から送信しても更新されないことを確認します。
 
 未来や他ユーザーのIDを直接送信するケース、ロールバックは自動テストで検証済みです。確認のために実DBの予定日や所有者を書き換える必要はありません。実MySQLでは、ブラウザでユーザーが「できた」を押した対象だけを通常の完了処理で更新します。お別れ・終了・お花畑・履歴一覧・編集は今回未実装です。
+
+
+## 花とのお別れ
+
+ホームのOwakare → GET `/flowers/{flowerId}/end`（確認のみ） → POST `/flowers/{flowerId}/end`（確定） → 花なしホーム、という流れです。確認画面のHomeはキャンセル用の通常リンクです。GETやキャンセルでは保存処理を呼びません。「お花畑に送る」は確定資料・UI06の表記です。お花畑の画面自体は次工程です。
+
+FlowerController → FlowerService → 既存UserRepository・FlowerRepository → DBの構造です。ログイン情報からユーザーを特定し、花IDとユーザーIDの両方で検索します。ACTIVEだけを終了でき、他人・不存在・ENDEDは拒否します。確認表示時だけでなく確定時にも再確認します。
+
+`endFlower`の@Transactional内で、最初にusers行をロックします。花登録・お世話完了も同じロックを使うため、同じ利用者の更新は順番に進みます。後から来た再送はENDEDを検出し、終了日を上書きしません。既存Clockによる日本時間の今日をended_onへ、ENDEDをstatusへ同時に保存します。ブラウザから終了日や所有者は受け取りません。
+
+Flower、care_tasks、care_recordsは削除しません。予定日・完了履歴も更新しません。既存のホーム取得条件がACTIVEのため、終了後の花と予定はホームから外れ、新しい花を登録できます。スキーマ・Entity・Repository・SQL・マスタ・依存関係の変更はありません。
+
+追加ファイル：FlowerEndException.java、flower-end.html、FlowerEndTest.java、FlowerEndWebTest.java。
+変更ファイル：FlowerService.java、FlowerController.java、home.html、flower.css、本README。
+
+### テスト
+
+```powershell
+.\mvnw.cmd "-Dtest=UserServiceTest,AuthWebTest,FlowerServiceTest,FlowerWebTest,CareServiceTest,HomeCareWebTest,CareCompletionTest,CareCompletionWebTest,FlowerEndTest,FlowerEndWebTest" verify
+```
+
+上記は実MySQLを使わない68件です。追加14件は確認表示・キャンセル導線・確定・日本時間の終了日・データ保持・今日のお世話からの除外・新しい花の登録・他人/不存在/再終了の拒否・保存失敗時ロールバック・未ログイン/CSRFなしの拒否を確認します。FlowerEndTestは専用の一時H2を使い、実MySQLの花を変更しません。既存のMySQL初期化テスト1件を含めた全件数は69件です。
+
+### 実ブラウザ・実MySQLの確認
+
+1. 既存の方法で環境変数を設定したPowerShellで `.\mvnw.cmd clean verify`、続いて `.\mvnw.cmd spring-boot:run` を実行します。SQLは再投入しません。
+2. ログインし、以下のSELECTで対象のflower_id・status・ended_onと予定・履歴件数を控えます。
+3. ホームのOwakareから確認画面を開き、種類とニックネームを確認します。Homeでキャンセルし、状態・終了日・件数が変化しないことを確認します。
+4. 再度確認画面を開き、「お花畑に送る」で確定します。完了メッセージと花なしホームが表示され、以前のお世話が表示されないことを確認します。
+5. 同じSELECTで、元の花がENDED、日本時間の今日がended_onに保存され、予定・履歴の件数が変わっていないことを確認します。
+6. 元の確認URLを再度開いてもホームに戻され、終了日が上書きされないことを確認します。New Flowerから新しい花を登録でき、元の花が残っていることも確認できます。
+7. ログアウト後は確認URLがログイン画面へ戻ることを確認します。
+
+```sql
+SELECT f.flower_id, f.flower_nickname, f.status, f.started_on, f.ended_on,
+       (SELECT COUNT(*) FROM care_tasks t WHERE t.flower_id = f.flower_id) AS task_count,
+       (SELECT COUNT(*) FROM care_records r
+        JOIN care_tasks t ON t.care_task_id = r.care_task_id
+        WHERE t.flower_id = f.flower_id) AS record_count
+FROM flowers f
+JOIN users u ON u.user_id = f.user_id
+WHERE u.email = '自分のメールアドレス'
+ORDER BY f.flower_id;
+```
+
+実MySQLでの終了操作とロックの動作確認は利用者の環境で行います。お花畑・思い出・復元・編集・履歴一覧はまだ実装していません。
+
+今回の検証結果：上記68件はすべて成功（失敗0・エラー0）、Maven verifyはBUILD SUCCESSでした。実MySQLを使用する初期化テスト1件は今回実行していません。確認画面のHTMLをChromeで表示し、幅320・390・1280pxで横はみ出しがないことを確認しました。

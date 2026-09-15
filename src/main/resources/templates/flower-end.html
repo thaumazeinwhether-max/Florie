@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>お花とのお別れ | Florie</title>
+    <link rel="stylesheet" th:href="@{/css/auth.css}">
+    <link rel="stylesheet" th:href="@{/css/flower.css}">
+</head>
+<body>
+<div class="flower-page">
+    <header th:replace="~{fragments/flower-layout :: header}"></header>
+    <main class="flower-end-content">
+        <h1>お花とのお別れ</h1>
+        <div class="farewell-flower">
+            <p th:text="${flower.flowerType.flowerName}"></p>
+            <p th:text="${flower.flowerNickname}"></p>
+        </div>
+        <p class="farewell-question">このお花のお世話を終了しますか？</p>
+        <p class="farewell-note">お別れしたお花は元に戻せません。</p>
+        <form th:action="@{/flowers/{id}/end(id=${flower.flowerId})}" method="post">
+            <button type="submit" class="primary-button">お花畑に送る</button>
+        </form>
+    </main>
+    <nav class="flower-nav" aria-label="画面移動">
+        <a class="round-link" th:href="@{/home}" aria-label="キャンセルしてHomeへ戻る">Home</a>
+    </nav>
+</div>
+</body>
+</html>

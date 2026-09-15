@@ -16,6 +16,8 @@
     </div>
     <main>
         <h1 class="visually-hidden">ホーム</h1>
+        <p class="notice home-notice" role="status" th:if="${flowerEnded}" th:text="${flowerEnded}"></p>
+        <p class="notice home-notice error" role="alert" th:if="${flowerError}" th:text="${flowerError}"></p>
         <p class="notice home-notice" role="status" th:if="${careCompleted}" th:text="${careCompleted}"></p>
         <p class="notice home-notice error" role="alert" th:if="${careError}" th:text="${careError}"></p>
         <p class="notice home-notice" role="status" th:if="${param.flowerRegistered}">お花を登録しました。</p>
@@ -58,7 +60,7 @@
             <nav class="flower-nav home-nav" aria-label="画面移動">
                 <a class="round-link" th:href="@{/home}" aria-current="page">Home</a>
                 <a th:if="${currentFlower == null}" class="round-link middle-link" th:href="@{/flowers/register}">New<br>Flower</a>
-                <button th:if="${currentFlower != null}" class="round-link middle-link" type="button" disabled>Owakare<small>準備中</small></button>
+                <a th:if="${currentFlower != null}" class="round-link middle-link" th:href="@{/flowers/{id}/end(id=${currentFlower.flowerId})}">Owakare</a>
                 <button class="round-link" type="button" disabled>Garden<small>準備中</small></button>
             </nav>
         </section>
