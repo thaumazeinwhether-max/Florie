@@ -17,10 +17,9 @@ public interface CareTaskRepository extends JpaRepository<CareTask, Long> {
             where task.flower.user.userId = :userId
               and task.flower.status = :status
               and task.nextCareDate <= :date
-            order by task.nextCareDate asc
+            order by task.nextCareDate asc, task.careTaskId asc
             """)
     List<CareTask> findDueTasks(@Param("userId") Long userId,
                                 @Param("status") FlowerStatus status,
                                 @Param("date") LocalDate date);
 }
-

@@ -6,6 +6,7 @@ import com.florie.repository.UserRepository;
 import com.florie.service.CustomUserDetailsService;
 import com.florie.service.UserService;
 import com.florie.service.FlowerService;
+import com.florie.service.CareService;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -40,6 +41,7 @@ class AuthWebTest {
     @Autowired private PasswordEncoder encoder;
     @MockitoBean private UserRepository repository;
     @MockitoBean private FlowerService flowerService;
+    @MockitoBean private CareService careService;
 
     @Test
     void pagesRenderWithCsrfAndConfirmationField() throws Exception {

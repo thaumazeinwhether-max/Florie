@@ -29,11 +29,27 @@
                 <p>お花がいません<br>新しいお花を<br>登録しましょう</p>
             </div>
             <div th:if="${currentFlower != null}" class="home-care-guide">
+                <h2>今日のお世話</h2>
+                <p class="guidance-card" th:if="${#lists.isEmpty(dueTasks)}">今日のお世話はありません。</p>
+                <ul class="today-care-list" th:unless="${#lists.isEmpty(dueTasks)}">
+                    <li class="today-care-card" th:each="task : ${dueTasks}">
+                        <h3 th:text="${task.careName}"></h3>
+                        <p class="care-due-label" th:if="${task.nextCareDate.isEqual(today)}">今日が予定日</p>
+                        <p class="care-due-label overdue" th:if="${task.nextCareDate.isBefore(today)}">予定日を過ぎています</p>
+                        <p class="care-note">予定日：<time th:datetime="${task.nextCareDate}" th:text="${#temporals.format(task.nextCareDate, 'yyyy/MM/dd')}"></time></p>
+                        <details class="care-details">
+                            <summary>お世話の説明</summary>
+                            <p th:if="${careDescriptions[task.careName] != null}" th:text="${careDescriptions[task.careName]}"></p>
+                            <p th:if="${careDescriptions[task.careName] == null}">説明を読み込めませんでした。</p>
+                            <p th:if="${task.careName == '茎を確認して整える'}">少し切る場合は1cm程度を目安にしてください。傷んだ部分があれば、その部分より上で切ります。予定日前でも傷みがあれば手入れしてください。直前に切ったばかりの場合は、状態を確認するだけで大丈夫です。切った後はすぐ水に戻しましょう。</p>
+                        </details>
+                    </li>
+                </ul>
+                <p class="care-note" th:unless="${#lists.isEmpty(dueTasks)}">完了を記録する機能は準備中です。</p>
                 <h2>お世話のヒント</h2>
                 <p class="guidance-card" th:text="${currentFlower.flowerType.careGuidance}"></p>
                 <p class="care-note">直射日光と冷暖房の風が直接当たる場所を避け、涼しい場所に飾りましょう。</p>
                 <p th:replace="~{fragments/flower-layout :: preservativeNote}"></p>
-                <p class="care-note">お世話一覧・完了操作は準備中です。</p>
             </div>
             <nav class="flower-nav home-nav" aria-label="画面移動">
                 <a class="round-link" th:href="@{/home}" aria-current="page">Home</a>

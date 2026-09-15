@@ -94,6 +94,13 @@
 .home-care-guide { padding: 16px 24px; }
 .home-care-guide h2 { color: white; font-size: 24px; margin: 0 0 24px; text-shadow: 0 3px 3px #00000025; }
 .guidance-card { background: #adc0b4; border-radius: 8px; padding: 16px; line-height: 1.8; box-shadow: 0 3px 4px #00000025; }
+.today-care-list { list-style: none; margin: 0; padding: 0; }
+.today-care-card { margin: 0 0 24px; padding: 16px; border-radius: 8px; background: #adc0b4; box-shadow: 0 3px 4px #00000025; overflow-wrap: anywhere; }
+.today-care-card h3 { margin: 0 0 12px; font-size: 22px; color: white; text-shadow: 0 2px 3px #00000035; }
+.care-due-label { margin: 0; font-size: 13px; font-weight: bold; }
+.care-due-label.overdue { color: #694329; }
+.care-details { font-size: 13px; line-height: 1.8; }
+.care-details summary { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 @media (max-width: 359px) {
     .flower-register-content { padding-left: 24px; padding-right: 24px; }
     .round-link { font-size: 16px; }

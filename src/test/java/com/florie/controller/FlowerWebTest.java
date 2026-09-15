@@ -6,6 +6,7 @@ import com.florie.entity.FlowerType;
 import com.florie.form.FlowerRegisterForm;
 import com.florie.service.FlowerRegistrationException;
 import com.florie.service.FlowerService;
+import com.florie.service.CareService;
 import com.florie.service.UserService;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class FlowerWebTest {
     @Autowired private MockMvc mvc;
     @MockitoBean private FlowerService flowerService;
+    @MockitoBean private CareService careService;
     @MockitoBean private UserService userService;
 
     @BeforeEach

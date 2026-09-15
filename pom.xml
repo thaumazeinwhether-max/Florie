@@ -22,6 +22,12 @@
     </properties>
 
     <dependencies>
+        <!-- 検索条件を実際のSQLで検証するためのテスト専用DB。本番のMySQLには接続しない。 -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>

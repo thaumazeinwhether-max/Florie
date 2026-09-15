@@ -1,6 +1,6 @@
 # Florie
 
-一輪挿しの花のお世話を支援するWebアプリです。現在はDB基盤、ユーザー新規登録・ログイン・ログアウト、花登録と初回お世話予定の作成まで実装しています。お世話一覧・完了・お別れ・お花畑は未実装です。SQLのDBへの反映は手動で行います。
+一輪挿しの花のお世話を支援するWebアプリです。現在はDB基盤、認証、花登録と初回予定の作成、今日のお世話一覧まで実装しています。お世話完了・お別れ・お花畑は未実装です。SQLのDBへの反映は手動で行います。
 
 ## 開発環境
 
@@ -227,7 +227,7 @@ Serviceの登録処理は次の順です。
 
 日付はDateTimeConfigで日本時間（Asia/Tokyo）を採用しています。9月14日の登録なら、水替えは9月15日、茎の確認は9月17日です。登録中に日付が変わってもずれないよう、一度取得した登録日から両方を計算します。
 
-説明文は今回care_tasksにコピーせずcare_templatesに保持します。お世話一覧の工程で花種類・お世話名から参照する方式を基本とし、説明の履歴保存は追加していません。今回マスタやDBスキーマの変更はありません。
+説明文はcare_tasksにコピーせずcare_templatesに保持します。今日のお世話一覧では花種類・お世話名から参照します。説明の履歴保存、マスタやDBスキーマの変更はありません。
 
 ### 入力と画面
 
@@ -277,3 +277,60 @@ FROM care_tasks GROUP BY flower_id;
 ```
 
 登録直後はdays_after_registrationが1と3、active_countが各1、task_countが各2になることを確認します。全体初期化テストだけでは実際の花の保存と予定の内容までは検証できません。実DBでの同時登録・失敗時のロールバック確認は残っています。お別れが未実装なので、登録した花は今回の画面から終了できません。
+
+## 今日のお世話一覧
+
+HomeController → CareService → UserRepository・CareTaskRepository → DBの順に読み取ります。ログイン情報からユーザーを特定し、次の条件をすべて満たすcare_tasksだけを検索します。
+
+- 花の所有者がログイン中ユーザーである。
+- 花の状態がACTIVEである。
+- next_care_dateが今日以前（<=）である。
+
+今日の日付は既存DateTimeConfigのClockから日本時間で取得します。1回の画面表示で取得する「今日」は一つにして、検索と表示の間で日付がずれないようにしています。予定日の古い順、同じ日ならcare_task_id順です。1行を1件として読み取り、遅延日数分の行を生成しません。
+
+花がいない場合は従来の花なしホーム、花がいて予定が0件なら「今日のお世話はありません。」を表示します。各カードにはお世話名、予定日、「今日が予定日」または「予定日を過ぎています」を表示します。カードは完了ボタンではありません。説明を開くと、花種類とお世話名に対応するcare_templatesの説明が読めます。茎の共通補足と延命剤の注意も表示します。説明用のDTOやJavaScriptは追加していません。
+
+追加・変更した主なファイルはCareService.java、HomeController.java、CareTaskRepository.java、home.html、flower.cssです。検索には既存のfindDueTasksを利用し、同日内の並び順だけを追加しました。DBスキーマ、既存マスタ、予定日、完了履歴を変更する処理はありません。
+
+### テスト
+
+```powershell
+.\mvnw.cmd "-Dtest=UserServiceTest,AuthWebTest,FlowerServiceTest,FlowerWebTest,CareServiceTest,HomeCareWebTest" verify
+```
+
+CareServiceTestはテスト専用H2のメモリ内DBで実際のRepositoryを動かし、今日・期限超過・未来・他ユーザー・終了済み・同日順序・説明取得を検証します。HomeCareWebTestはホームの表示、件数、空状態、未認証アクセスを確認します。既存の認証・花登録テストも実行します。
+
+H2はpom.xmlのtestスコープなので本番アプリには入りません。テストクラス内だけにH2接続とcreate-dropを指定し、その一時DBを作成・破棄します。通常のapplication.propertiesのMySQL接続、ddl-auto=none、SQL自動実行無効の設定は維持しています。H2での成功はMySQL固有の動作検証の代わりにはなりません。
+
+上記は40テストです。全体初期化のFlorieApplicationTestsも含めると41テストです。MySQLの環境変数を設定した環境では、通常の `.\mvnw.cmd clean verify` で全件を実行してください。
+
+### 実ブラウザとMySQLでの確認
+
+1. 既存の方法でFLORIE_DB_PASSWORDを設定し、`.\mvnw.cmd clean verify`、続いて `.\mvnw.cmd spring-boot:run` を実行します。SQLの再投入は不要です。
+2. ログインして http://localhost:8080/home を開きます。花がいる場合は今日以前の予定だけが表示されることを確認します。登録当日など全予定が未来なら、0件のメッセージになります。
+3. 同じ画面を再読み込みしても、同じお世話が増えないことを確認します。カードには完了操作がないことも確認します。
+4. 花がいない別ユーザーで従来の空状態を確認します。他ユーザーの予定が見えないことも確認します。
+5. ログアウト後に/homeを直接開き、ログイン画面へ戻ることを確認します。
+
+MySQLにflorie_appで接続し、以下の読み取り用SELECTと画面を比較できます。メールの例はログイン中ユーザーのものに置き換えます。パスワードやハッシュは取得しません。
+
+```sql
+SELECT DATE(UTC_TIMESTAMP() + INTERVAL 9 HOUR) AS today_in_japan;
+
+SELECT t.care_task_id, t.care_name, t.next_care_date,
+       CASE
+         WHEN t.next_care_date < DATE(UTC_TIMESTAMP() + INTERVAL 9 HOUR) THEN '期限超過'
+         WHEN t.next_care_date = DATE(UTC_TIMESTAMP() + INTERVAL 9 HOUR) THEN '今日'
+         ELSE '未来・表示対象外'
+       END AS expected_display
+FROM care_tasks t
+JOIN flowers f ON f.flower_id = t.flower_id
+JOIN users u ON u.user_id = f.user_id
+WHERE u.email = '自分のメールアドレス'
+  AND f.status = 'ACTIVE'
+ORDER BY t.next_care_date, t.care_task_id;
+```
+
+上の結果のうち「未来・表示対象外」を除いた件数・名前が、画面と一致することを確認してください。期限超過のデータがまだない場合は、予定日の翌日以降に再表示して確認できます。確認のために既存の予定日を書き換えたり、PC時計を変更したりする必要はありません。日付別の条件は自動テストでも検証します。
+
+完了処理がまだないため、期限を過ぎた予定は表示され続けます。アプリから履歴追加・次回予定日の更新は行いません。
