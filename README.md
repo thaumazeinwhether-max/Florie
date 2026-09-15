@@ -1,6 +1,6 @@
 # Florie
 
-一輪挿しの花のお世話を支援するWebアプリです。現在はDB基盤、認証、花登録と初回予定の作成、今日のお世話一覧まで実装しています。お世話完了・お別れ・お花畑は未実装です。SQLのDBへの反映は手動で行います。
+一輪挿しの花のお世話を支援するWebアプリです。現在はDB基盤、認証、花登録、今日のお世話一覧、お世話完了まで実装しています。お別れ・お花畑は未実装です。SQLのDBへの反映は手動で行います。
 
 ## 開発環境
 
@@ -288,7 +288,7 @@ HomeController → CareService → UserRepository・CareTaskRepository → DBの
 
 今日の日付は既存DateTimeConfigのClockから日本時間で取得します。1回の画面表示で取得する「今日」は一つにして、検索と表示の間で日付がずれないようにしています。予定日の古い順、同じ日ならcare_task_id順です。1行を1件として読み取り、遅延日数分の行を生成しません。
 
-花がいない場合は従来の花なしホーム、花がいて予定が0件なら「今日のお世話はありません。」を表示します。各カードにはお世話名、予定日、「今日が予定日」または「予定日を過ぎています」を表示します。カードは完了ボタンではありません。説明を開くと、花種類とお世話名に対応するcare_templatesの説明が読めます。茎の共通補足と延命剤の注意も表示します。説明用のDTOやJavaScriptは追加していません。
+花がいない場合は従来の花なしホーム、花がいて予定が0件なら「今日のお世話はありません。」を表示します。各カードにはお世話名、予定日、「今日が予定日」または「予定日を過ぎています」を表示します。カード内の「できた」から完了を記録できます。説明を開くと、花種類とお世話名に対応するcare_templatesの説明が読めます。茎の共通補足と延命剤の注意も表示します。説明用のDTOやJavaScriptは追加していません。
 
 追加・変更した主なファイルはCareService.java、HomeController.java、CareTaskRepository.java、home.html、flower.cssです。検索には既存のfindDueTasksを利用し、同日内の並び順だけを追加しました。DBスキーマ、既存マスタ、予定日、完了履歴を変更する処理はありません。
 
@@ -302,13 +302,13 @@ CareServiceTestはテスト専用H2のメモリ内DBで実際のRepositoryを動
 
 H2はpom.xmlのtestスコープなので本番アプリには入りません。テストクラス内だけにH2接続とcreate-dropを指定し、その一時DBを作成・破棄します。通常のapplication.propertiesのMySQL接続、ddl-auto=none、SQL自動実行無効の設定は維持しています。H2での成功はMySQL固有の動作検証の代わりにはなりません。
 
-上記は40テストです。全体初期化のFlorieApplicationTestsも含めると41テストです。MySQLの環境変数を設定した環境では、通常の `.\mvnw.cmd clean verify` で全件を実行してください。
+上記は一覧表示までの40テストです。完了機能を含むテストの実行方法は次節に記載します。MySQLの環境変数を設定した環境では、通常の `.\mvnw.cmd clean verify` で全件を実行してください。
 
 ### 実ブラウザとMySQLでの確認
 
 1. 既存の方法でFLORIE_DB_PASSWORDを設定し、`.\mvnw.cmd clean verify`、続いて `.\mvnw.cmd spring-boot:run` を実行します。SQLの再投入は不要です。
 2. ログインして http://localhost:8080/home を開きます。花がいる場合は今日以前の予定だけが表示されることを確認します。登録当日など全予定が未来なら、0件のメッセージになります。
-3. 同じ画面を再読み込みしても、同じお世話が増えないことを確認します。カードには完了操作がないことも確認します。
+3. 同じ画面を再読み込みしても、同じお世話が増えないことを確認します。完了前の再読み込みでは予定や履歴が変更されないことを確認します。
 4. 花がいない別ユーザーで従来の空状態を確認します。他ユーザーの予定が見えないことも確認します。
 5. ログアウト後に/homeを直接開き、ログイン画面へ戻ることを確認します。
 
@@ -333,4 +333,66 @@ ORDER BY t.next_care_date, t.care_task_id;
 
 上の結果のうち「未来・表示対象外」を除いた件数・名前が、画面と一致することを確認してください。期限超過のデータがまだない場合は、予定日の翌日以降に再表示して確認できます。確認のために既存の予定日を書き換えたり、PC時計を変更したりする必要はありません。日付別の条件は自動テストでも検証します。
 
-完了処理がまだないため、期限を過ぎた予定は表示され続けます。アプリから履歴追加・次回予定日の更新は行いません。
+未完了の予定は期限を過ぎても表示され続けます。「できた」で完了すると履歴を1件追加し、次回予定日を更新します。
+
+## お世話完了
+
+### 処理と変更ファイル
+
+ホームのお世話カードの「できた」からPOST `/care-tasks/{taskId}/complete` を送信します。ThymeleafのフォームがCSRFトークンを付け、Spring Securityが検証します。GETでは更新しません。
+
+CareController → CareService.completeCare → UserRepository・CareTaskRepository・CareRecordRepository → DBの順に処理します。新規ファイルはCareController.java、CareCompletionException.java、CareCompletionTest.java、CareCompletionWebTest.javaです。CareService、CareTaskRepository、home.html、flower.cssと既存HomeCareWebTestを更新しています。Entity・DB定義・マスタ・SQL・依存ライブラリは変更していません。
+
+1. ログインユーザーのusers行をロックする（花登録と同じ順序）。
+2. task IDとユーザーIDの両方で対象タスクを検索し、PESSIMISTIC_WRITEでロックする。
+3. 花がACTIVE、予定日が今日以前、周期が1日以上であることを確認する。
+4. 既存Clockによる日本時間の今日をcompleted_onとして、対象タスクとともにcare_recordsへ1件保存する。
+5. 実際の完了日＋interval_daysをnext_care_dateへ保存する。
+6. 成功メッセージを付けてホームへリダイレクトする。未来になった予定は今日の一覧から消える。
+
+対象が存在しない、他ユーザー、ENDED、未来の予定は更新しません。他ユーザーと不存在については同じメッセージです。完了日やユーザーIDはブラウザから受け取りません。アプリの状態名はACTIVE / ENDEDで、ENDという状態はありません。
+
+Service全体を@Transactionalで囲みます。履歴のINSERTと予定のUPDATEをそれぞれflushしますが、flushはコミットではありません。どちらかに失敗したら例外をService外へ返し、両方をロールバックします。Controllerは内部SQLを表示せず、ホームに簡潔なエラーを表示します。メッセージはSpring MVCのFlash属性で一度だけ表示します。
+
+同時送信はロック待ちとなり、後の処理は更新後の予定日を再確認します。1回目で次回日が未来に移るため、2回目は拒否されます。古い予定日から日数を足したり、遅延回数分の履歴を追加したりしません。次回の予定日を迎えれば、その日の新しいお世話として再度完了できます。
+
+### 自動テスト
+
+```powershell
+.\mvnw.cmd "-Dtest=UserServiceTest,AuthWebTest,FlowerServiceTest,FlowerWebTest,CareServiceTest,HomeCareWebTest,CareCompletionTest,CareCompletionWebTest" verify
+```
+
+実MySQLを使わない54件を実行します。MySQLでの既存アプリ初期化テスト1件も含めると合計55件です。MySQL用環境変数を設定した環境では `.\mvnw.cmd clean verify` で全件実行できます。
+
+CareCompletionTestの9件は、専用H2でServiceの実トランザクションを実行します。正常完了、日本時間の実日付、期限超過、履歴1件、次回日、一覧からの除外、未来・他ユーザー・ENDED・不存在の拒否、再送、履歴INSERT後の失敗時ロールバック、2要求の同時完了を確認します。テスト自体はトランザクションで囲まず、Serviceの処理後に別の読み取りで永続化結果を確認します。同時要求の再現にのみ2スレッドを使い、アプリ本体にマルチスレッド処理は追加していません。
+
+CareCompletionWebTestの5件は、POST・CSRF・認証、ブラウザからの日付やユーザー指定を採用しないこと、成功とエラーの通知、GET・不正形式IDの拒否を確認します。既存HomeCareWebTestは完了フォームを検証するように更新しています。
+
+H2はテスト専用であり、実MySQLのテストガーベラ・ユーザー・マスタに接続しません。MySQL固有のロック動作は実環境で別途確認が必要です。
+
+### 実ブラウザ・実MySQLの確認手順
+
+1. 既存の方法でFLORIE_DB_PASSWORDを設定して `.\mvnw.cmd clean verify` を実行し、`.\mvnw.cmd spring-boot:run` で起動します。SQLを再投入しません。
+2. 自分のアカウントでホームを開き、実際にお世話を済ませたタスクだけ「できた」を押します。花別説明や延命剤製品の案内に沿った手入れで完了できます。
+3. 記録完了メッセージが表示され、そのタスクが今日の一覧から消えることを確認します。他の未完了タスクは残ります。
+4. MySQLで以下の読み取り専用SELECTを実行します。メールは自分のものへ置き換え、必要なら完了前にも実行して件数を比較してください。パスワード・ハッシュは取得しません。
+
+```sql
+SELECT t.care_task_id, t.care_name, t.interval_days, t.next_care_date,
+       COUNT(r.care_record_id) AS record_count,
+       MAX(r.completed_on) AS last_completed_on,
+       DATE_ADD(MAX(r.completed_on), INTERVAL t.interval_days DAY) AS expected_next_date
+FROM care_tasks t
+JOIN flowers f ON f.flower_id = t.flower_id
+JOIN users u ON u.user_id = f.user_id
+LEFT JOIN care_records r ON r.care_task_id = t.care_task_id
+WHERE u.email = '自分のメールアドレス'
+  AND f.status = 'ACTIVE'
+GROUP BY t.care_task_id, t.care_name, t.interval_days, t.next_care_date;
+```
+
+完了したタスクのrecord_countが1だけ増え、last_completed_onが日本時間の今日、next_care_dateとexpected_next_dateが一致することを確認します。水替えなら翌日、茎なら3日後です。期限超過でも現在日基準です。
+
+二重送信は、完了前に同じホームを2タブ開き、一つ目で完了した後、古い二つ目の画面でも同じタスクの「できた」を押して確認できます。二つ目は拒否され、履歴件数と次回日は増えません。ログアウトした後、古い画面から送信しても更新されないことを確認します。
+
+未来や他ユーザーのIDを直接送信するケース、ロールバックは自動テストで検証済みです。確認のために実DBの予定日や所有者を書き換える必要はありません。実MySQLでは、ブラウザでユーザーが「できた」を押した対象だけを通常の完了処理で更新します。お別れ・終了・お花畑・履歴一覧・編集は今回未実装です。

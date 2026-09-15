@@ -53,15 +53,16 @@ class HomeCareWebTest {
     }
 
     @Test
-    void rendersOneCardPerTaskWithDueLabelsAndNoCompletionForm() throws Exception {
-        when(cares.getDueTasks("own@example.com", today)).thenReturn(List.of(
-                task("茎を確認して整える", today.minusDays(7)), task("水を替える", today)));
+    void rendersOneCardPerTaskWithDueLabelsAndCompletionForms() throws Exception {
+        List<CareTask> dueTasks = List.of(task("茎を確認して整える", today.minusDays(7)), task("水を替える", today));
+        when(cares.getDueTasks("own@example.com", today)).thenReturn(dueTasks);
         MvcResult result = mvc.perform(get("/home").with(user("own@example.com")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("今日が予定日")))
                 .andExpect(content().string(containsString("予定日を過ぎています")))
                 .andExpect(content().string(containsString("&lt;説明&gt;")))
-                .andExpect(content().string(not(containsString("/complete")))).andReturn();
+                .andExpect(content().string(containsString("/care-tasks/1/complete")))
+                .andExpect(content().string(containsString("できた"))).andReturn();
         assertThat(result.getResponse().getContentAsString().split("class=\"today-care-card\"").length - 1).isEqualTo(2);
         verify(cares).getDueTasks("own@example.com", today);
         savePreview("home-due", result);
@@ -91,9 +92,10 @@ class HomeCareWebTest {
     }
 
     private CareTask task(String name, LocalDate date) {
-        CareTask task = new CareTask();
-        task.setCareName(name);
-        task.setNextCareDate(date);
+        CareTask task = mock(CareTask.class);
+        when(task.getCareTaskId()).thenReturn(name.equals("水を替える") ? 1L : 2L);
+        when(task.getCareName()).thenReturn(name);
+        when(task.getNextCareDate()).thenReturn(date);
         return task;
     }
 

@@ -101,6 +101,7 @@
 .care-due-label.overdue { color: #694329; }
 .care-details { font-size: 13px; line-height: 1.8; }
 .care-details summary { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.care-complete-form { margin-top: 16px; }
 @media (max-width: 359px) {
     .flower-register-content { padding-left: 24px; padding-right: 24px; }
     .round-link { font-size: 16px; }

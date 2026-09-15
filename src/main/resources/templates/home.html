@@ -16,6 +16,8 @@
     </div>
     <main>
         <h1 class="visually-hidden">ホーム</h1>
+        <p class="notice home-notice" role="status" th:if="${careCompleted}" th:text="${careCompleted}"></p>
+        <p class="notice home-notice error" role="alert" th:if="${careError}" th:text="${careError}"></p>
         <p class="notice home-notice" role="status" th:if="${param.flowerRegistered}">お花を登録しました。</p>
         <p class="notice home-notice" role="status" th:if="${param.alreadyRegistered}">お世話中のお花がいるため、新しいお花は登録できません。</p>
         <div th:if="${currentFlower == null}" class="empty-flower-space" aria-hidden="true"></div>
@@ -43,9 +45,11 @@
                             <p th:if="${careDescriptions[task.careName] == null}">説明を読み込めませんでした。</p>
                             <p th:if="${task.careName == '茎を確認して整える'}">少し切る場合は1cm程度を目安にしてください。傷んだ部分があれば、その部分より上で切ります。予定日前でも傷みがあれば手入れしてください。直前に切ったばかりの場合は、状態を確認するだけで大丈夫です。切った後はすぐ水に戻しましょう。</p>
                         </details>
+                        <form th:action="@{/care-tasks/{id}/complete(id=${task.careTaskId})}" method="post" class="care-complete-form">
+                            <button type="submit" class="primary-button" th:attr="aria-label=${task.careName + '：できた'}">できた</button>
+                        </form>
                     </li>
                 </ul>
-                <p class="care-note" th:unless="${#lists.isEmpty(dueTasks)}">完了を記録する機能は準備中です。</p>
                 <h2>お世話のヒント</h2>
                 <p class="guidance-card" th:text="${currentFlower.flowerType.careGuidance}"></p>
                 <p class="care-note">直射日光と冷暖房の風が直接当たる場所を避け、涼しい場所に飾りましょう。</p>
