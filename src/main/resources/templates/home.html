@@ -26,6 +26,7 @@
         <section th:if="${currentFlower != null}" class="current-flower" aria-label="お世話中のお花">
             <h2 th:text="${currentFlower.flowerType.flowerName}"></h2>
             <p class="flower-nickname" th:text="${currentFlower.flowerNickname}"></p>
+            <p class="care-note">お迎えした日：<time th:datetime="${currentFlower.startedOn}" th:text="${#temporals.format(currentFlower.startedOn, 'yyyy/MM/dd')}"></time></p>
             <div th:replace="~{fragments/flower-layout :: flowerPlaceholder}"></div>
         </section>
         <section class="home-lower" th:classappend="${currentFlower == null} ? 'home-empty' : 'home-active'">
@@ -55,6 +56,9 @@
                 <h2>お世話のヒント</h2>
                 <p class="guidance-card" th:text="${currentFlower.flowerType.careGuidance}"></p>
                 <p class="care-note">直射日光と冷暖房の風が直接当たる場所を避け、涼しい場所に飾りましょう。</p>
+                <p class="care-note">予定を待たず、水が濁ったり、ぬめりが出たりしたら水替え・洗浄を行う。</p>
+                <p class="care-note">水が減って切り口が出そうなら、次の予定まで放置しない。</p>
+                <p class="care-note">茎が短くなったら、切り口が水につく小さな花瓶に替える。</p>
                 <p th:replace="~{fragments/flower-layout :: preservativeNote}"></p>
             </div>
             <nav class="flower-nav home-nav" aria-label="画面移動">

@@ -46,6 +46,7 @@ class HomeCareWebTest {
         flower = new Flower();
         flower.setFlowerType(type);
         flower.setFlowerNickname("ばらちゃん");
+        flower.setStartedOn(LocalDate.of(2026, 9, 14));
         when(users.getNickname("own@example.com")).thenReturn("はな");
         when(flowers.getCurrentFlower("own@example.com")).thenReturn(Optional.of(flower));
         when(cares.getToday()).thenReturn(today);
@@ -77,10 +78,30 @@ class HomeCareWebTest {
     }
 
     @Test
+    void activeFlowerShowsStoredStartDateAndCommonGuidanceWithOrWithoutDueTasks() throws Exception {
+        // 案内はお世話の有無に依存せず、開始日は今日ではなく保存済みの日付を表示する。
+        for (List<CareTask> dueTasks : List.of(List.<CareTask>of(), List.of(task("水を替える", today)))) {
+            when(cares.getDueTasks("own@example.com", today)).thenReturn(dueTasks);
+            mvc.perform(get("/home").with(user("own@example.com")))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("お迎えした日：")))
+                    .andExpect(content().string(containsString("<time datetime=\"2026-09-14\">2026/09/14</time>")))
+                    .andExpect(content().string(containsString("予定を待たず、水が濁ったり、ぬめりが出たりしたら水替え・洗浄を行う。")))
+                    .andExpect(content().string(containsString("水が減って切り口が出そうなら、次の予定まで放置しない。")))
+                    .andExpect(content().string(containsString("茎が短くなったら、切り口が水につく小さな花瓶に替える。")))
+                    .andExpect(content().string(containsString(flower.getFlowerType().getCareGuidance())));
+        }
+    }
+
+    @Test
     void noFlowerKeepsEmptyHomeAndDoesNotSearchTasks() throws Exception {
         when(flowers.getCurrentFlower("own@example.com")).thenReturn(Optional.empty());
         mvc.perform(get("/home").with(user("own@example.com")))
                 .andExpect(content().string(containsString("お花がいません")))
+                .andExpect(content().string(not(containsString("お迎えした日"))))
+                .andExpect(content().string(not(containsString("水替え・洗浄を行う"))))
+                .andExpect(content().string(not(containsString("次の予定まで放置しない"))))
+                .andExpect(content().string(not(containsString("小さな花瓶に替える"))))
                 .andExpect(content().string(not(containsString("今日のお世話"))));
         verifyNoInteractions(cares);
     }
