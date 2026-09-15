@@ -113,3 +113,33 @@
     .flower-register-content { padding-left: 24px; padding-right: 24px; }
     .round-link { font-size: 16px; }
 }
+
+/* 一覧はFigmaの3列を基準に、花が増えたら次の段へ並べる。 */
+.garden-page { display: flex; flex-direction: column; }
+.garden-page > .flower-header { flex-shrink: 0; }
+.garden-content { flex: 1; padding: 22px 16px 40px; }
+.garden-content h1 { margin: 0 0 30px; text-align: center; font-size: 36px; color: white; text-shadow: 0 3px 3px #00000025; }
+.garden-flowers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 12px; padding: 0; margin: 0; list-style: none; }
+.garden-flower { display: block; text-decoration: none; color: white; text-align: center; font-size: 14px; font-weight: bold; border-radius: 8px; }
+.garden-flower:hover { background: #ffffff18; }
+.garden-flower span { display: block; overflow-wrap: anywhere; }
+.garden-flower .flower-placeholder { width: 90px; max-width: 100%; height: 115px; margin: 0 auto 8px; }
+.garden-empty { color: white; font-size: 24px; font-weight: bold; text-align: center; text-shadow: 0 3px 3px #00000025; }
+.garden-empty p:first-child { margin: 76px 0 138px; }
+.garden-empty p:last-child { margin: 0; }
+.garden-nav { justify-content: space-between; background: #a79b83; border-radius: 8px 8px 0 0; padding: 8px 12px 12px; margin-top: auto; }
+.memory-content { flex: 1; padding: 82px 44px 44px; }
+.memory-card { min-height: 506px; padding: 8px 12px 40px; border-radius: 8px; background: #bed6c7; color: white; font-weight: bold; }
+.memory-card h1 { font-size: 24px; text-align: center; margin: 0 0 22px; }
+.memory-flower { text-align: center; font-size: 14px; }
+.memory-flower p { margin: 0; overflow-wrap: anywhere; }
+.memory-flower .flower-placeholder { width: 80px; height: 102px; margin: 0 auto; }
+.memory-dates { font-size: 24px; margin: 40px 0 0; }
+.memory-dates dd { margin: 0; }
+.memory-dates dt:not(:first-child) { margin-top: 54px; }
+.memory-nav { justify-content: flex-end; }
+@media (max-width: 359px) {
+    .memory-content { padding-left: 24px; padding-right: 24px; }
+    .memory-dates { font-size: 22px; }
+    .garden-empty { font-size: 22px; }
+}

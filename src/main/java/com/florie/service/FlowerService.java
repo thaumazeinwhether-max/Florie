@@ -54,6 +54,25 @@ public class FlowerService {
         return flowerRepository.findByUserUserIdAndStatus(user.getUserId(), FlowerStatus.ACTIVE);
     }
 
+    @Transactional(readOnly = true)
+    public List<Flower> getEndedFlowers(String email) {
+        User user = userRepository.findByEmail(UserService.normalizeEmail(email))
+                .orElseThrow(() -> new IllegalStateException("ユーザーが見つかりません。"));
+        return flowerRepository.findByUserUserIdAndStatusOrderByEndedOnDesc(user.getUserId(), FlowerStatus.ENDED);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Flower> getMemoryFlower(String email, Long flowerId) {
+        User user = userRepository.findByEmail(UserService.normalizeEmail(email))
+                .orElseThrow(() -> new IllegalStateException("ユーザーが見つかりません。"));
+        // IDだけで取得せず、一覧を経由しないアクセスでも所有者を確認する。
+        Optional<Flower> flower = flowerRepository.findByFlowerIdAndUserUserId(flowerId, user.getUserId());
+        if (flower.isEmpty() || flower.get().getStatus() != FlowerStatus.ENDED) {
+            return Optional.empty();
+        }
+        return flower;
+    }
+
     @Transactional
     public void endFlower(String email, Long flowerId) {
         // 登録・お世話完了と同じ順番でロックし、同じ利用者の更新を順番に処理する。

@@ -1,6 +1,6 @@
 # Florie
 
-一輪挿しの花のお世話を支援するWebアプリです。現在はDB基盤、認証、花登録、今日のお世話一覧、お世話完了、お別れまで実装しています。お花畑は未実装です。SQLのDBへの反映は手動で行います。
+一輪挿しの花のお世話を支援するWebアプリです。現在はDB基盤、認証、花登録、今日のお世話一覧、お世話完了、お別れ、お花畑と思い出表示まで実装しています。SQLのDBへの反映は手動で行います。
 
 ## 開発環境
 
@@ -444,3 +444,54 @@ ORDER BY f.flower_id;
 実MySQLでの終了操作とロックの動作確認は利用者の環境で行います。お花畑・思い出・復元・編集・履歴一覧はまだ実装していません。
 
 今回の検証結果：上記68件はすべて成功（失敗0・エラー0）、Maven verifyはBUILD SUCCESSでした。実MySQLを使用する初期化テスト1件は今回実行していません。確認画面のHTMLをChromeで表示し、幅320・390・1280pxで横はみ出しがないことを確認しました。
+
+
+## お花畑・思い出表示
+
+ホームのGarden → GET `/garden` → 花を選択 → GET `/garden/{flowerId}` の順に表示します。GardenController → FlowerService → 既存Repository → DBの構造で、ユーザーはログイン情報から特定します。
+
+一覧は既存の`findByUserUserIdAndStatusOrderByEndedOnDesc`で、自分のENDEDだけを終了日の新しい順に取得します。同日の並び順は固定していません。詳細は花IDとユーザーIDで取得し、さらにENDEDを確認します。他人・ACTIVE・不存在は同じメッセージでお花畑へ戻します。未ログインは既存Spring Securityによりログイン画面へ戻ります。
+
+今回の「Figmaを最優先する」という指定に従い、一覧はUI07の3列配置、種類・ニックネーム・既存の共通仮SVGとし、日付はUI09のMemoryカードへまとめました。詳細設計5.12の一覧日付とUI07の差は、確定資料8.2で保留されていた表示差分です。一緒に過ごした日数は追加していません。空の場合はUI08の「まだお花がいません」「お世話を終えたお花がここに並びます」を表示します。多数の花は次の段へ並べ、縦スクロールします。
+
+思い出には種類・ニックネーム・共通仮SVG・お世話を始めた日・お世話を終えた日を表示します。日付は既存DATEをyyyy/MM/ddで表示します。メモ、写真、予定一覧、完了履歴一覧、編集・復元は実装しません。
+
+読み取り用Serviceは`@Transactional(readOnly = true)`とし、検索だけを行います。readOnly指定だけに依存せず、Controller・Serviceとも更新・削除・Entityへの値設定を呼ばず、POSTの入口も設けていません。CareTask・CareRecordのRepositoryもこの機能では使いません。DBスキーマ、SQL、マスタ、Entity、Repository、依存ライブラリ、docsは変更していません。
+
+追加：GardenController.java、garden.html、memory.html、GardenTest.java。
+変更：FlowerService.java、home.html、flower.css、README.md。
+
+### テスト方法
+
+```powershell
+.\mvnw.cmd "-Dtest=UserServiceTest,AuthWebTest,FlowerServiceTest,FlowerWebTest,CareServiceTest,HomeCareWebTest,CareCompletionTest,CareCompletionWebTest,FlowerEndTest,FlowerEndWebTest,GardenTest" verify
+```
+
+GardenTestは10件。専用H2と実Service・Repository・Controller・Thymeleaf・Securityを使用し、取得条件・終了日順・空状態・詳細日付・HTMLエスケープ・直接アクセス拒否・未ログイン・GETの繰り返しでのデータ保持・遷移・POST不存在を確認します。実MySQLを使わないテストは既存68件と合わせて78件です。MySQL用の既存初期化テスト1件を含めると全79件です。
+
+### 実ブラウザ・実MySQLでの確認
+
+1. 既存の環境変数を設定済みのPowerShellで `.\mvnw.cmd clean verify`、続いて `.\mvnw.cmd spring-boot:run` を実行します。SQLは再投入しません。
+2. ログインし、ホームのGardenからお花畑へ移動します。終了済み「テストガーベラ」が表示され、ACTIVEの花が表示されないことを確認します。
+3. 花を選び、種類・ニックネーム・開始日・終了日が下記SELECTと一致することを確認します。Gardenで一覧へ、Homeでホームへ戻れます。
+4. 一覧・思い出を数回再読み込みし、下記SELECTの結果と件数が変わらないことを確認します。
+5. 終了済みの花がない別アカウントでは空状態になることを確認します。そこで元の花の詳細URLを直接開いても、表示されずお花畑へ戻ることを確認します。
+6. 自分のACTIVEのIDや存在しないIDでも思い出が開かないこと、ログアウト後は両画面がログイン画面へ戻ることを確認します。確認用に実データを編集・削除する必要はありません。
+
+```sql
+SELECT f.flower_id, ft.flower_name, f.flower_nickname,
+       f.status, f.started_on, f.ended_on
+FROM flowers f
+JOIN flower_types ft ON ft.flower_type_id = f.flower_type_id
+JOIN users u ON u.user_id = f.user_id
+WHERE u.email = '自分のメールアドレス'
+ORDER BY f.ended_on DESC;
+
+SELECT COUNT(*) AS flower_count FROM flowers;
+SELECT COUNT(*) AS task_count FROM care_tasks;
+SELECT COUNT(*) AS record_count FROM care_records;
+```
+
+最終的な8種類の花イラストと正式フォント等の調整は別工程です。今回の仮SVGは共通なので、種類は併記した花名で区別します。
+
+今回の検証結果：78件すべて成功（失敗0・エラー0）、Maven verifyはBUILD SUCCESS。実MySQL用の初期化テスト1件は今回実行していません。一覧・空状態・思い出の3画面をChromeで確認し、320・390・1280px幅で横はみ出しがないことを確認しました。

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>思い出 | Florie</title>
+    <link rel="stylesheet" th:href="@{/css/auth.css}">
+    <link rel="stylesheet" th:href="@{/css/flower.css}">
+</head>
+<body>
+<div class="flower-page garden-page">
+    <header th:replace="~{fragments/flower-layout :: header}"></header>
+    <main class="memory-content">
+        <article class="memory-card">
+            <h1>Memory</h1>
+            <div class="memory-flower">
+                <div th:replace="~{fragments/flower-layout :: flowerPlaceholder}"></div>
+                <p th:text="${flower.flowerType.flowerName}"></p>
+                <p th:text="${flower.flowerNickname}"></p>
+            </div>
+            <dl class="memory-dates">
+                <dt>お世話を始めた日</dt>
+                <dd><time th:datetime="${flower.startedOn}" th:text="${#temporals.format(flower.startedOn, 'yyyy/MM/dd')}"></time></dd>
+                <dt>お世話を終えた日</dt>
+                <dd><time th:datetime="${flower.endedOn}" th:text="${#temporals.format(flower.endedOn, 'yyyy/MM/dd')}"></time></dd>
+            </dl>
+        </article>
+    </main>
+    <nav class="flower-nav garden-nav memory-nav" aria-label="画面移動">
+        <a class="round-link" th:href="@{/garden}">Garden</a>
+    </nav>
+</div>
+</body>
+</html>

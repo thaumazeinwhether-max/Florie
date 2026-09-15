@@ -61,7 +61,7 @@
                 <a class="round-link" th:href="@{/home}" aria-current="page">Home</a>
                 <a th:if="${currentFlower == null}" class="round-link middle-link" th:href="@{/flowers/register}">New<br>Flower</a>
                 <a th:if="${currentFlower != null}" class="round-link middle-link" th:href="@{/flowers/{id}/end(id=${currentFlower.flowerId})}">Owakare</a>
-                <button class="round-link" type="button" disabled>Garden<small>準備中</small></button>
+                <a class="round-link" th:href="@{/garden}">Garden</a>
             </nav>
         </section>
     </main>
