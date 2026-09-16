@@ -1,497 +1,317 @@
 # Florie
 
-一輪挿しの花のお世話を支援するWebアプリです。現在はDB基盤、認証、花登録、今日のお世話一覧、お世話完了、お別れ、お花畑と思い出表示まで実装しています。SQLのDBへの反映は手動で行います。
+一輪と暮らす毎日を、お世話から思い出まで。
 
-## 開発環境
+## 1. 概要
 
-- Java 21（JDK）
-- Spring Boot 4.1.1
-- Maven 3.9.16（Maven Wrapperから取得）
+Florieは、**一輪挿し初心者向けのお花のお世話サポートWebアプリ**です。一度に管理する花を1輪に絞り、「何をすればよいか分からない」「お世話を忘れてしまう」という課題を、花ごとの案内と「今日のお世話」で支援します。
 
-Javaのインストール先をJAVA_HOMEに設定し、JavaとGitをPATHから利用できる環境で実行してください。初回はMavenと依存ライブラリのダウンロードにインターネット接続が必要です。Mavenの手動インストールは不要です。
+お世話を済ませたら「できた」で記録し、次回の予定を更新します。お別れした花はGardenに残り、Memoryで一緒に過ごした期間を振り返れます。
 
-## ビルドとテスト
+初期版の主要機能とUIは実装済みです。主要なユーザーフローは実MySQL・実ブラウザで確認しています。
 
-PowerShellで、このREADMEがあるフォルダから実行します。
-テストはSpring Boot全体を初期化するため、MySQLが起動しており、次節の環境変数が設定されている必要があります。
+## 2. 開発背景・目的
 
-```powershell
-.\mvnw.cmd clean verify
+文系・IT未経験の大学生が、SE就職活動に向けて、要件定義 → 基本設計 → 詳細設計 → 実装 → テストまでの一連の開発を経験するために制作しました。
+
+完成後もJava・SQL・Spring Bootの学習教材として使えるよう、短く高度なコードより、処理を順番に追える明示的なコードを重視しています。役割ごとにクラスを分け、必要な箇所には「なぜその処理が必要か」を日本語で説明しています。
+
+開発を通して、画面からDBまでの処理の流れ、SQLとEntityの対応、認証と認可の違い、複数の更新をまとめるトランザクション、正常系・異常系のテストを学習しました。
+
+## 3. 主な機能
+
+| 機能 | 内容 |
+|---|---|
+| ユーザー登録・認証 | ニックネーム・メールアドレス・パスワードで登録。ログイン／ログアウトとセッション管理 |
+| 花登録 | 8種類から1種類を選び、花専用のニックネームを設定（必須・1～20文字）。1ユーザーにつきお世話中の花は1輪 |
+| お世話予定の自動作成 | 花登録時に、花種類に対応する2件のお世話予定を作成 |
+| 花ごとのお世話案内 | 水量・注意事項、各お世話の説明、登録当日の準備、置き場所などの共通案内を表示 |
+| 今日のお世話 | 今日が予定日のお世話と、期限を過ぎた未完了のお世話を表示 |
+| お世話完了 | 完了履歴を保存し、実際の完了日を基準に次回予定日を更新 |
+| Owakare（お別れ） | 確認画面を経て、花をACTIVE（お世話中）からENDED（終了済み）へ変更。終了日も保存 |
+| Garden | 自分の終了済みの花を、終了日の新しい順にイラストで一覧表示 |
+| Memory | 選択した花の種類・ニックネーム・お迎えした日・お別れした日を表示 |
+| 次の一輪を迎える | お別れ後は新しい花を登録可能。以前の花・お世話予定・完了履歴は保持 |
+
+完了履歴はDBへ保存しますが、初期版では履歴一覧画面を設けていません。
+
+## 4. 対応している花
+
+ガーベラ、バラ、チューリップ、カーネーション、ひまわり、ダリア、アネモネ、ラナンキュラスの8種類です。
+
+<p>
+  <img src="src/main/resources/static/images/flowers/gerbera.svg" width="64" alt="ガーベラ">
+  <img src="src/main/resources/static/images/flowers/rose.svg" width="64" alt="バラ">
+  <img src="src/main/resources/static/images/flowers/tulip.svg" width="64" alt="チューリップ">
+  <img src="src/main/resources/static/images/flowers/carnation.svg" width="64" alt="カーネーション">
+  <img src="src/main/resources/static/images/flowers/sunflower.svg" width="64" alt="ひまわり">
+  <img src="src/main/resources/static/images/flowers/dahlia.svg" width="64" alt="ダリア">
+  <img src="src/main/resources/static/images/flowers/anemone.svg" width="64" alt="アネモネ">
+  <img src="src/main/resources/static/images/flowers/ranunculus.svg" width="64" alt="ラナンキュラス">
+</p>
+
+各種類に、絵柄を揃えたオリジナルSVGイラストを用意しています。画像はプロジェクト内で管理し、外部CDNに依存しません。花登録・Home・Owakare・Garden・Memoryで共通の素材を使います。
+
+## 5. お世話の基本仕様
+
+| お世話 | 周期 | 初回予定日 | 完了後の次回予定日 |
+|---|---|---|---|
+| 水を替える | 1日 | 花登録日＋1日 | 実際の完了日＋1日 |
+| 茎を確認して整える | 3日 | 花登録日＋3日 | 実際の完了日＋3日 |
+
+日付は日本時間（Asia/Tokyo）で扱います。登録当日の準備は案内として表示し、定期タスクにはしません。予定日が今日以前のお世話を表示し、遅れた日数分だけ同じタスクを増やすことはありません。
+
+花ごとの水量や注意事項、共通の置き場所の案内は、完了操作が必要なお世話とは分けて表示します。水の濁り・ぬめり・水切れなどには、予定日を待たずに対応するよう案内しています。
+
+1日・3日という周期は、水道水で飾る場合を標準とした**Florie初期版のUX上の統一仕様**です。すべての花や環境における唯一の最適周期を示すものではありません。延命剤を使う場合は、製品に記載された薄め方・水替え方法を優先します。
+
+採用理由と出典は、[お世話マスタ確定資料](docs/02_Florie_お世話マスタ確定.md)にまとめています。
+
+## 6. 画面・ユーザーフロー
+
+```text
+新規登録 → ログイン → Home（花なし）→ New Flower（花登録）
+                                      ↓
+                              Home（今日のお世話）
+                                      ↓
+                               「できた」で完了
+                                      ↓
+                              Homeで次の予定を待つ
+                                      ↓
+                          Owakare（確認後にお別れ）
+                                      ↓
+                                Home（花なし）
+                                      ↓
+                              Garden → Memory
+                                      ↓
+                         Garden → Home → 新しい花を登録
 ```
 
-Javaコードのコンパイル、テスト、実行用JARの作成を行います。結果はtargetフォルダに出力します。
+登録後は自動ログインせず、ログイン画面へ戻ります。Owakareのキャンセルは状態を変更せずHomeへ戻ります。GardenはHomeからいつでも開けますが、表示対象は終了済みの花だけです。
 
-テストだけを実行する場合：
+## 7. 使用技術
 
-```powershell
-.\mvnw.cmd test
+| 分類 | 技術・用途 |
+|---|---|
+| 言語・実行環境 | Java 21 |
+| Webアプリ | Spring Boot 4.1.1、Spring MVC |
+| 認証・入力検証 | Spring Security、Bean Validation |
+| データアクセス | Spring Data JPA、Hibernate、MySQL Connector/J |
+| 画面 | Thymeleaf、HTML、CSS |
+| データベース | MySQL 8.4 |
+| ビルド | Maven 3.9.16（Maven Wrapperで取得） |
+| テスト | JUnit Jupiter、Mockito、MockMvc、Spring Security Test、H2（テスト用途のみ） |
+| 開発・管理 | Git、GitHub、VS Code |
+
+フロントエンドフレームワークは導入せず、HTML・CSS・Thymeleafを中心に構成しています。
+
+## 8. アーキテクチャ
+
+```text
+ブラウザ → Controller → Service → Repository → Database
+              ↓
+           Template → HTMLを返す
 ```
 
-## 起動と終了
+| 要素 | 役割 |
+|---|---|
+| Controller | リクエストと入力を受け取り、Serviceを呼び出し、表示・遷移先を決める |
+| Service | 一輪制限、予定日計算、完了・終了処理などの業務ルールとトランザクションを管理する |
+| Repository | 条件を指定したデータの検索・保存を行う |
+| Entity | DBのテーブル・関連・日付などをJavaのクラスとして表現する |
+| Template | Controllerから渡された値をThymeleafでHTMLに表示する |
 
-MySQL84サービスが起動していることと、florie_appがflorieデータベースを利用できることを前提とします。PowerShellで以下を実行し、表示される入力欄にアプリ用ユーザーのパスワードを入力してください。入力した値は画面やコマンド履歴に残しません。環境変数はこのPowerShellと、そこから起動するアプリにだけ引き継がれます。
+主な配置は次のとおりです。
 
-```powershell
-$florieCredential = Get-Credential -UserName 'florie_app' -Message 'Florie用DBパスワードを入力してください'
-if ($null -eq $florieCredential) { throw 'パスワード入力をキャンセルしました。' }
-$env:FLORIE_DB_PASSWORD = $florieCredential.GetNetworkCredential().Password
-Remove-Variable florieCredential
+```text
+src/main/java/com/florie/
+  config/       認証・日本時間のClock設定
+  controller/   画面とリクエストの入口
+  service/      業務処理
+  repository/   DBへのアクセス
+  entity/       DBに対応するクラス
+  form/         入力項目と検証
+src/main/resources/
+  templates/    画面と共通フラグメント
+  static/       CSS・SVGイラスト
+src/test/       自動テスト
+sql/            手動適用するスキーマ・初期マスタ
+docs/          設計資料・Figma画像
 ```
 
-同じPowerShellで起動します。
+設計上の決定は[実装仕様確定資料](docs/01_Florie_実装仕様確定.md)と[お世話マスタ確定資料](docs/02_Florie_お世話マスタ確定.md)、詳細は[設計書一式](docs/01_Florie_設計書一式.docx)に記録しています。これらは決定時点の記録を含み、現在の実装状態は本READMEに整理しています。
+
+## 9. データベース
+
+| テーブル | 役割 |
+|---|---|
+| users | ユーザーのニックネーム・メールアドレス・パスワードハッシュを保持 |
+| flower_types | 花8種類の名前・表示順・画像パス・水量などの案内を保持 |
+| care_templates | 花種類ごとのお世話名・周期・説明文を保持（8種類×2件＝16件） |
+| flowers | 所有者・花種類・花のニックネーム・開始日・終了日・状態を保持 |
+| care_tasks | 登録された花ごとのお世話名・周期・次回予定日を保持 |
+| care_records | 対象のお世話予定と実際の完了日を保持 |
+
+ユーザーから花、花からお世話予定、お世話予定から完了履歴へ関連付けています。花種類にはお世話マスタを紐付け、花登録時にその名前・周期を予定へコピーします。
+
+開始日・終了日・予定日・完了日はDATE／LocalDateで扱います。テーブルはSQLで管理し、通常起動時は `spring.jpa.hibernate.ddl-auto=none`、`spring.sql.init.mode=never` として、自動作成・自動投入を行いません。
+
+## 10. 設計・実装で工夫した点
+
+- **一輪に集中できる設計**：同時に管理する花を1輪に限定。登録時にユーザー行をロックしてACTIVEの有無を確認し、同時送信でも二重登録を防ぐ構成にしました。
+- **更新を途中で分けない**：花と2件の予定の作成、お世話完了時の履歴保存と次回予定日の更新は、それぞれServiceの1トランザクションで処理します。
+- **実際の暮らしに合わせた日付計算**：予定日を過ぎてもタスクを増やさず、実際の完了日から次回予定日を計算します。完了処理では対象をロックし、更新後の予定日を再確認することで二重完了を防ぎます。
+- **認証と所有者確認**：Spring Securityで認証・セッション・CSRF保護を管理。パスワードはBCrypt（コスト12）でハッシュ化します。花・タスクの操作やMemoryの表示では、URLのIDだけに頼らず所有者と状態を確認します。
+- **削除せず思い出につなげる**：お別れは確認後のPOSTでのみ実行し、ENDEDと終了日を保存します。花・予定・履歴を残すことで、既存データからGardenとMemoryを表示できます。
+- **画面と業務処理の分離**：UIはTemplateとCSS、業務ルールはServiceに置き、画面調整が保存処理に影響しにくい構成にしました。
+- **既存データを活かすイラスト表示**：`illustration_path` の有効なローカルパスを優先し、未設定の場合は花名に対応する同梱SVGを表示します。マスタの再投入は不要です。
+- **スマートフォンを中心にしたUI**：Figmaのベージュ・緑・茶色と丸みを保ちながら、主要ボタンは52px、入力文字は16pxを基本に調整。長いニックネームの折り返し、キーボードフォーカス、文字のコントラスト、セーフエリアにも配慮しました。
+
+## 11. テスト
+
+自動テストでは、主に次を確認しています。
+
+| 対象 | 確認内容の例 |
+|---|---|
+| 認証 | 入力チェック、重複メール、パスワードのハッシュ化、ログイン・ログアウト、セッション |
+| 花登録 | 必須・文字数・花選択、一輪制限、予定2件と初回予定日 |
+| 今日のお世話 | 当日・期限超過・未来・花なし・該当予定なし |
+| お世話完了 | 実際の完了日、次回予定日、二重送信・同時完了、保存失敗時のロールバック |
+| お別れ | 確認GETとキャンセルで更新しないこと、ENDED化、終了日、関連データの保持、次の花の登録 |
+| Garden・Memory | 自分のENDEDだけの表示、空状態、日付表示、読み取りでDBを変更しないこと |
+| アクセス制御 | 未ログイン、CSRFなしのPOST、他ユーザーのID指定、未来の予定・終了済み花への完了操作 |
+| イラスト・画面 | 8種類の画像対応、Home・Garden・Memoryの画像、Garden表記、長い名前の表示 |
+
+最終確認時点（2026年9月16日）の自動テストは**88件成功、MavenビルドはBUILD SUCCESS**です。DBを使う機能テストはテスト専用H2で行い、ControllerのテストではMockMvcなどを使用しています。H2での成功はMySQL固有の制約やロック動作の検証を代替するものではありません。
+
+主要機能は別途、実MySQL・実ブラウザでも確認しています。UIはブラウザの幅320／375／390／430pxとPC幅で確認済みです。実機iPhone Safariでの表示・操作確認は、改善候補として残しています。
+
+## 12. セットアップ
+
+### 12.1 必要環境
+
+- JDK 21（`java` と `javac` が利用できること）
+- MySQL Server 8.4と `mysql` クライアントコマンド
+- Webブラウザ、初回の依存関係取得に必要なインターネット接続
+
+リポジトリを取得し、`pom.xml` があるプロジェクト直下へ移動します。MavenはWrapperが取得するため、別途インストールする必要はありません。以下の手順は、新しく空のDBを準備する場合のものです。既存のFlorie環境ではテーブルやマスタを作り直さないでください。
+
+### 12.2 MySQLのDB・アプリ用ユーザーを準備
+
+MySQLを起動し、プロジェクト直下のターミナルから管理者として接続します。以下の `root` は初期設定用で、アプリからは使用しません。`mysql` にPATHが通っていない場合は、インストール先の実行ファイルを指定してください。
+
+```sh
+mysql --default-character-set=utf8mb4 -h localhost -P 3306 -u root -p
+```
+
+MySQLの入力画面で次を実行します。`<自分で決めたDBパスワード>` は説明用の置き換え箇所です。実際の値を記入したSQLファイルを保存したり、リポジトリへ追加したりしないでください。
+
+```sql
+CREATE DATABASE florie CHARACTER SET utf8mb4;
+CREATE USER 'florie_app'@'localhost' IDENTIFIED BY '<自分で決めたDBパスワード>';
+GRANT SELECT, INSERT, UPDATE ON florie.* TO 'florie_app'@'localhost';
+```
+
+アプリ用ユーザーには現在の機能で必要な読み取り・追加・更新の権限を付与します。次のテーブル作成・構造変更・マスタ投入は、そのまま管理者の接続で行います。
+
+### 12.3 SQLを順番に適用
+
+| 順序 | ファイル | 内容 |
+|---|---|---|
+| 1 | [01_create_tables.sql](sql/01_create_tables.sql) | 6テーブルを作成 |
+| 2 | [02_add_care_guidance.sql](sql/02_add_care_guidance.sql) | 説明用2カラムとお世話マスタの一意制約を追加 |
+| 3 | [03_seed_care_masters.sql](sql/03_seed_care_masters.sql) | 花8件・お世話16件を投入 |
+
+MySQLの同じ接続で、1ファイルずつ実行し、各ファイルでエラーがないことを確認してから次へ進みます。
+
+```sql
+SOURCE sql/01_create_tables.sql;
+SOURCE sql/02_add_care_guidance.sql;
+SOURCE sql/03_seed_care_masters.sql;
+```
+
+03はトランザクションを開始しますが、**自動でCOMMITしません**。途中も含めエラーがなく、表示された花8件・お世話16件の名前・周期・説明が正しいことを確認してから、同じ接続で確定します。
+
+```sql
+COMMIT;
+exit
+```
+
+03にエラーや内容の不一致があれば、COMMITせず `ROLLBACK;` で取り消します。01・02の構造変更はROLLBACKで戻せないため、失敗した場合はそこで止まり、適用済みの状態を確認してください。01・02は適用済みDBに再実行しません。03も説明・周期を更新するため、通常の起動時に再投入する必要はありません。
+
+初期マスタの画像パスは空文字ですが、アプリが花名に対応する8種類のSVGを表示するため、画像表示用の追加SQLは不要です。
+
+### 12.4 DBパスワードを環境変数へ設定
+
+接続先は `localhost:3306/florie`、ユーザー名は `florie_app` です。パスワードは `FLORIE_DB_PASSWORD` から取得します。`application.properties` や `.env` ファイルへの記入は不要です。
+
+**Windows PowerShell**（入力画面でDBパスワードを指定）：
+
+```powershell
+$dbCredential = Get-Credential -UserName 'florie_app' -Message 'FlorieのDBパスワードを入力してください'
+$env:FLORIE_DB_PASSWORD = $dbCredential.GetNetworkCredential().Password
+Remove-Variable dbCredential
+```
+
+**macOS／LinuxのBash**（入力内容は表示されません）：
+
+```bash
+read -r -s -p 'Florie DB password: ' FLORIE_DB_PASSWORD
+printf '\n'
+export FLORIE_DB_PASSWORD
+```
+
+どちらも現在のターミナルと、そこから起動するプロセスに適用します。新しくターミナルを開いた場合は再設定してください。
+
+### 12.5 Maven Wrapperで起動
+
+環境変数を設定した同じターミナルで実行します。
+
+**Windows PowerShell：**
 
 ```powershell
 .\mvnw.cmd spring-boot:run
 ```
 
-ログに「Started FlorieApplication」が表示されれば起動完了です。ブラウザで http://localhost:8080/login を開いてください。
+**macOS／Linux：**
 
-終了するには、起動したターミナルでCtrl+Cを押します。
+```sh
+sh ./mvnw spring-boot:run
+```
 
-接続確認では、ログの「HikariPool-1 - Start completed.」と「Started FlorieApplication」を確認します。接続成功を確認してから、同じPowerShellで ` .\mvnw.cmd test ` を実行してください。終了後、環境変数が不要になったら以下で削除します。
+起動後、[http://localhost:8080](http://localhost:8080) を開きます。「新規登録」からユーザーを作成し、ログインして花を登録してください。登録当日の定期タスクは0件が正常で、水替えは翌日、茎の手入れは3日後から表示されます。停止は起動中のターミナルで `Ctrl+C` です。
+
+## 13. テスト実行
+
+プロジェクト直下で実行します。
+
+**Windows PowerShell：**
 
 ```powershell
-Remove-Item Env:FLORIE_DB_PASSWORD
+.\mvnw.cmd verify
 ```
 
-接続先は `jdbc:mysql://localhost:3306/florie`、ユーザー名は `florie_app` です。パスワードは `FLORIE_DB_PASSWORD` から取得し、既定値は設けません。rootは使用しません。Hibernateの自動テーブル作成・更新は `ddl-auto=none`、SQLスクリプトの自動実行は `spring.sql.init.mode=never` で無効にしています。
+**macOS／Linux：**
 
-パスワードがない状態でコンパイルとJAR作成だけを確認する場合は、次を使います。これはDB接続やテストの成功を確認するコマンドではありません。
-
-```powershell
-.\mvnw.cmd -DskipTests package
+```sh
+sh ./mvnw verify
 ```
 
-## ファイルの役割
+通常の全件実行には、第12章のMySQL準備と `FLORIE_DB_PASSWORD` の設定が必要です。`FlorieApplicationTests` は通常の設定でアプリの初期化・MySQL接続を確認します。その他のDBを使う機能テストはクラス内でH2へ接続し、一時的なテーブルを作成・破棄するため、実MySQLの登録済みの花を変更しません。
 
-| ファイル | 役割 |
-|---|---|
-| pom.xml | Java・Spring Bootのバージョン、依存ライブラリ、ビルド方法 |
-| mvnw / mvnw.cmd | Mavenを実行する公式スクリプト。Windowsではmvnw.cmdを使用 |
-| .mvn/wrapper/maven-wrapper.properties | 使用するMavenのバージョンと取得先 |
-| src/main/java/com/florie/FlorieApplication.java | アプリを起動する入口 |
-| src/main/resources/application.properties | アプリ名とDB接続設定。パスワード自体は保存しない |
-| src/test/java/com/florie/FlorieApplicationTests.java | Spring Bootの初期化を確認するテスト |
-| .gitignore / .gitattributes | Gitで除外するファイルと改行の扱い |
+結果はターミナルと `target/surefire-reports/` で確認できます。`verify` の成功だけで、実MySQL上の全操作や実機Safariの表示まで確認したことにはなりません。
 
-Web用とテスト用の依存関係に加え、Spring Data JPA、MySQLドライバー、Thymeleaf、Spring Security、Validationを使用しています。認証のテストにはspring-boot-starter-security-testを使用します。バージョンはSpring Bootの管理に合わせます。
+## 14. 初期版で対象外とした機能
 
-.gitignoreでは.env、ローカル用設定、ログ、targetを除外しています。ただし、通常のapplication.propertiesはGit管理対象なので、パスワードを直接記載してはいけません。
+一輪のお世話から振り返りまでを完成させるため、次は意図的に初期版のスコープ外としています。
 
-## 仕様の根拠と次の工程
+- 自由記述の思い出メモ、写真アップロード
+- 花の編集・復活、複数輪の同時管理
+- お世話履歴の一覧画面、タスクの手動追加・周期編集
+- SNS共有
+- 季節・気温・延命剤に応じた自動周期変更
 
-[開発ルール](AGENTS.md)、[確定仕様](docs/01_Florie_実装仕様確定.md)、[実装前整理資料](docs/00_Florie_実装前整理資料.md)と設計書を参照してください。
+## 15. 今後の改善候補
 
-お世話の初期設定はdocs/02_Florie_お世話マスタ確定.mdで確定しました。現在の開発環境では、説明カラムと花8件・お世話16件の反映はユーザー側で確認済みです。新しいDBを用意する場合は[追加SQLの手順](sql/README.md)も参照してください。花登録の確認でSQLの再実行は不要です。パスワード等はGitへ保存しません。
-
-## DBスキーマの手動反映
-
-現在の開発環境では、SQL反映と従来の起動テストはユーザー側で確認済みです。以下は新しい空のDBを用意する場合の手順です。既存DBで再実行する必要はありません。
-
-Florieフォルダを開いたPowerShellで、次のコマンドを実行します。`-p`の後ろにはパスワードを書かず、MySQLの入力要求に応じて入力してください。
-
-```powershell
-& 'C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe' --default-character-set=utf8mb4 -h localhost -P 3306 -u florie_app -p florie
-```
-
-MySQLのプロンプトで、まず接続先と既存テーブルを確認します。
-
-```sql
-SELECT DATABASE();
-SHOW TABLES;
-```
-
-データベースがflorieで、テーブルがないことを確認してから実行します。
-
-```sql
-SOURCE sql/01_create_tables.sql;
-SHOW TABLES;
-SHOW CREATE TABLE flowers\G
-SHOW CREATE TABLE care_records\G
-exit
-```
-
-SQLは空のDBに一度だけ適用する初期作成用です。既存テーブルがある場合や実行中にエラーが出た場合は、再実行や削除をせずエラー内容を確認してください。MySQLのCREATE TABLEは途中まで成功した分が残ることがあります。CREATE権限が不足する場合は、DBを準備した管理者にスキーマ反映を依頼してください。アプリ用の接続設定をrootへ変更する必要はありません。
-
-SQLはプロジェクト直下のsqlフォルダに置き、自動実行の対象にしていません。`ddl-auto=none`と`spring.sql.init.mode=never`も維持しています。01には初期データはありません。新しい空のDBでは01の後に[02・03の手順](sql/README.md)も実行します。既存6テーブルがあるDBでは01を再実行しません。
-
-反映後、前述の方法でFLORIE_DB_PASSWORDを設定した同じPowerShellで実行します。
-
-```powershell
-.\mvnw.cmd clean verify
-```
-
-これはコンパイル・アプリ初期化・Repositoryの検索定義の確認です。`ddl-auto=none`なので、これだけでSQLとEntityの全カラム一致や実際の登録・更新まで確認したことにはなりません。それらのDB操作テストは後続工程で行います。
-
-## EntityとRepository
-
-| テーブル | Entity | Repository | 役割 |
-|---|---|---|---|
-| users | User | UserRepository | ユーザー情報 |
-| flower_types | FlowerType | FlowerTypeRepository | 花種類マスター |
-| care_templates | CareTemplate | CareTemplateRepository | 花種類ごとのお世話設定 |
-| flowers | Flower | FlowerRepository | 登録した一輪。花ニックネームと状態を保持 |
-| care_tasks | CareTask | CareTaskRepository | 各花の現在のお世話予定 |
-| care_records | CareRecord | CareRecordRepository | 完了日の履歴 |
-
-Javaファイルはsrc/main/java/com/florie/entityとrepositoryに配置しています。FlowerStatusはACTIVEとENDEDを表すenumで、DBにはVARCHARとして保存します。完了日はLocalDateとDATEで対応させています。
-
-関連は、FlowerからUser・FlowerType、CareTemplateからFlowerType、CareTaskからFlower、CareRecordからCareTaskへの単方向ManyToOneです。親側に一覧フィールドを持たせず、一覧はRepositoryで検索します。DTO・継承・抽象クラスは追加していません。
-
-外部キーはON DELETE RESTRICTとし、JPAにも削除の連動設定は付けていません。親を削除して履歴が連鎖的に消えることを防ぎます。ただし全レコードの削除禁止を保証する仕組みではありません。JpaRepositoryの標準削除メソッドは使わず、今後のServiceで終了を状態更新として実装します。一輪制限と同時登録対策はFlowerServiceで実装しています。
-
-ニックネームはVARCHAR(20) NOT NULLとCHECK制約で空・半角空白のみを拒否します。ユーザーと花のニックネームは、それぞれ別のForm・Serviceで入力検証します。SQLの文字数はMySQLのCHAR_LENGTHを基準とし、Java入力検証の数え方は次節に記載します。
-
-## ユーザー登録・ログイン・ログアウト
-
-### 処理とファイルの役割
-
-- `controller/AuthController.java`：ログイン・登録画面の表示、登録結果の画面への受け渡し。
-- `form/UserRegisterForm.java`：登録入力と必須・形式・長さ・確認一致の検証。確認パスワードはDBには渡しません。
-- `service/UserService.java`：重複確認、ハッシュ化、ユーザー保存。登録全体をトランザクションで管理します。
-- `service/EmailAlreadyRegisteredException.java`：メール重複をControllerへ伝えます。
-- `service/CustomUserDetailsService.java`：UserRepositoryでメールアドレスから認証用ユーザー情報を取得します。
-- `config/SecurityConfig.java`：Spring Securityのログイン・ログアウト・アクセス制御とBCryptの設定。
-- `controller/HomeController.java`：認証済みユーザー名と自分のACTIVEな花を取得し、花あり・花なしのホームを表示します。
-- `templates/login.html`、`register.html`、`home.html`、`error.html`、`fragments/logo.html`：Thymeleaf画面。
-- `static/css/auth.css`：ログイン・登録画面を中心とした共通デザイン。
-
-Javaのパスは `src/main/java/com/florie`、HTML・CSSは `src/main/resources` を基準とします。
-UserRepositoryの既存のfindByEmail・existsByEmailと標準のsaveAndFlushを利用し、Repositoryの変更はありません。
-
-登録はController → Service → Repository → usersの順に処理します。成功時は `/login?registered` へ移動し、自動ログインしません。
-ログインPOSTはSpring Securityが受け取り、CustomUserDetailsService → Repositoryでユーザーを探してBCryptで照合します。成功時は `/home`、失敗時は `/login?error` へ移動します。存在しないメールと誤ったパスワードは同じエラー表示です。
-
-セッションにはSpring Security標準のSecurityContextを保持し、独自のユーザーセッション管理は追加していません。認証成功後はパスワード・ハッシュが認証オブジェクトから消去され、セッションIDが変更されます。POST `/logout` でセッションを無効化し、JSESSIONID Cookieを削除して `/login?logout` へ戻ります。未ログインの `/home` はログイン画面へ誘導します。POSTにはCSRFトークンが必要で、Thymeleafがフォームに追加します。
-
-### 入力と保存
-
-| 項目 | チェック |
-|---|---|
-| ユーザーニックネーム | 必須、空白のみ不可、1～20文字。重複可 |
-| メール | 必須、メール形式、255文字以内、重複不可 |
-| パスワード | 必須、8文字以上、UTF-8で72バイト以内。文字種の強制なし |
-| 確認パスワード | 必須、パスワードと一致 |
-
-入力の細部として、メールは前後の空白を除去し、小文字に統一して登録・ログインの両方で扱います。パスワードは空白を除去せずそのまま照合します。JavaのSize検証とHTMLのmaxlengthはUTF-16の長さなので、一部の絵文字などは2文字分です。通常の日本語は1文字分です。
-
-BCrypt（計算コスト12）で、毎回ランダムなソルトを使ったハッシュだけをusers.password_hashへ保存します。BCryptの上限に合わせて72バイトを超える入力を拒否し、切り詰めません。日本語は通常1文字3バイトです。エラー画面にはニックネーム・メールのみ再表示し、パスワード欄は空にします。HTML出力はThymeleafでエスケープし、内部例外やSQLをエラー画面に表示しません。
-
-### 認証の自動テスト
-
-DBのパスワードなしで、今回のService・画面・認証だけを検証する場合：
-
-```powershell
-.\mvnw.cmd "-Dtest=UserServiceTest,AuthWebTest" verify
-```
-
-UserServiceTestは入力拒否・重複・ハッシュの保存内容を確認します。AuthWebTestはDB部分だけをMockitoで置き換え、実際のController、Service、Spring Security、Thymeleafで登録・ログイン・セッション・ログアウト・CSRFを確認します。画面確認用HTMLをtarget/ui-previewへ出力します。これらは実DBの接続や保存を検証するテストではありません。
-
-全テストは、環境変数とMySQLを準備して ` .\mvnw.cmd clean verify ` で実行します。既存のFlorieApplicationTestsはDBを含むアプリ全体の初期化確認です。
-
-### 実DBを使った確認手順
-
-1. このREADMEの起動手順に従ってFLORIE_DB_PASSWORDを設定し、同じPowerShellで ` .\mvnw.cmd clean verify ` を実行します。SQLの再実行は不要です。
-2. ` .\mvnw.cmd spring-boot:run ` で起動し、http://localhost:8080/register を開きます。
-3. テスト用のニックネーム・未登録メール・8文字以上のパスワード・同じ確認値で登録します。ログイン画面へ戻り、登録完了が表示されることを確認します。
-4. 同じメールで再登録し、重複エラーになることを確認します。空欄、短いパスワード、確認不一致も確認します。エラー後にパスワードが残っていないことも確認します。
-5. 登録したメールとパスワードでログインし、ホームに自分のニックネームが表示されることを確認します。再読み込みしてもログインが維持されることを確認します。
-6. ログアウトし、再び `/home` を開くとログイン画面へ戻ることを確認します。誤ったパスワードと未登録メールが同じエラーになることを確認します。
-
-必要なら、florie_appでMySQLに接続して次のSQLで登録結果を確認できます。パスワードハッシュそのものは表示しません。
-
-```sql
-SELECT user_id, nickname, email, created_at,
-       (LEFT(password_hash, 4) = '$2a$' AND CHAR_LENGTH(password_hash) = 60) AS bcrypt_format
-FROM users;
-```
-
-画面はUI画像のベージュ背景、白いラベル、入力欄・茶色いボタンの幅と角丸、下部の画面切替リンクに合わせています。確認パスワード欄を補った登録画面は縦にスクロールできます。ロゴは文字とオリジナルの葉のSVGによる近似で、手書き文字の見た目は端末のフォントで変わります。
-
-## 花の登録
-
-### 処理と構成
-
-`FlowerController`はGET `/flowers/register`で画面を表示し、POST `/flowers`で`FlowerRegisterForm`を検証して`FlowerService`へ渡します。ユーザーID・日付・状態は入力させず、ログイン情報とサーバーの日付から決めます。
-
-Serviceの登録処理は次の順です。
-
-1. 入力を再検証し、ログインユーザーのusers行をロックする。
-2. ACTIVEの花があれば拒否する。
-3. 選択した花種類がDBに存在し、承認されたお世話設定2件と説明が揃っていることを確認する。
-4. 花のニックネーム、ログインユーザー、花種類、登録日、ACTIVEをflowersへ保存する。終了日はNULL。
-5. マスタの名前・周期をコピーしてcare_tasksを2件保存する。予定日は同じ登録日からplusDays(intervalDays)で計算する。
-6. 成功したらホームへリダイレクトする。
-
-`@Transactional`によって花と予定をまとめて保存します。保存失敗は例外をServiceの外へ返して全体をロールバックします。usersのロックはUserRepository.findByEmailForUpdateのPESSIMISTIC_WRITEで取得します。花が0件でも存在するユーザー行を使うので、同じユーザーが2つのタブから登録しても順番に処理されます。後の処理は先の保存後にACTIVEの存在を調べます。今後、花を作成する別経路を追加する場合も同じロック規則が必要です。直接SQLを実行した場合まで一輪制限を保証するDB制約ではありません。
-
-日付はDateTimeConfigで日本時間（Asia/Tokyo）を採用しています。9月14日の登録なら、水替えは9月15日、茎の確認は9月17日です。登録中に日付が変わってもずれないよう、一度取得した登録日から両方を計算します。
-
-説明文はcare_tasksにコピーせずcare_templatesに保持します。今日のお世話一覧では花種類・お世話名から参照します。説明の履歴保存、マスタやDBスキーマの変更はありません。
-
-### 入力と画面
-
-花種類は必須・正の数・DBに存在するID、花のニックネームは必須・空白のみ不可・20文字以内です。文字数はユーザー登録と同じJavaのSize検証なので、一部の絵文字は2文字分です。不正なIDの形式にも日本語でエラーを表示します。エラー時は入力内容と選択を保ちます。
-
-DBの花一覧を表示順で取得します。花の選択はラジオボタンで1つに限定し、選択した花の常時案内をCSSで表示します。JavaScriptは追加していません。8種類と準備案内を収めるため縦スクロールにしています。ホームは自分の花だけを表示し、花がいない場合だけNew Flowerへ進めます。未実装のOwakare・Gardenは無効なボタンです。今日のお世話を装ったダミーの完了ボタンはありません。花の絵は共通の仮SVGで、最終素材は後工程です。
-
-### ビルドと自動テスト
-
-DBへ接続せず、登録処理・画面・既存認証を確認する場合：
-
-```powershell
-.\mvnw.cmd "-Dtest=UserServiceTest,AuthWebTest,FlowerServiceTest,FlowerWebTest" verify
-```
-
-FlowerServiceTestはRepositoryを置き換え、正常登録、空白・長すぎる名前、未選択・不存在ID、一輪制限、マスタ不足、予定2件と日付、保存例外の伝播を確認します。FlowerWebTestはServiceを置き換え、画面表示、入力チェック、認証・CSRF、入力からユーザー情報を指定できないこと、遷移を確認します。これらのテストでは実MySQLのロック競合やロールバックは再現していません。
-
-### 実DB・ブラウザで確認する手順
-
-1. MySQLを起動し、既存の方法でFLORIE_DB_PASSWORDを設定したPowerShellで `.\mvnw.cmd clean verify` を実行する。
-2. `.\mvnw.cmd spring-boot:run` で起動し、http://localhost:8080/login でログインする。SQLやマスタを再投入する必要はありません。
-3. ACTIVEの花がないユーザーでホームのNew Flowerを開く。8種類と準備案内があり、花を選び替えるとその花の水量・注意事項が表示されることを確認する。
-4. 未選択・空欄で送信し、エラーになることを確認する。20文字を超える入力はブラウザでも制限します。サーバー側の21文字拒否は自動テストで確認します。
-5. 花と1～20文字のニックネームを指定して登録する。ホームに選んだ花種類と花のニックネームが表示されることを確認する。
-6. `/flowers/register` を直接開いても、新しい花を登録できないことを確認する。ブラウザの戻る操作から再送信しても拒否されることを確認する。
-7. 別のテストユーザーでログインすると、先のユーザーの花が表示されないことを確認する。
-
-同時操作は、まだ花を持たない同一ユーザーで登録画面を2タブ開いてから、両方で登録を送信して確認できます。結果がACTIVE 1件・予定2件であることを確認してください。既存の花やユーザーを削除して確認する必要はありません。
-
-florie_appでMySQLに接続した後、以下のSELECTで確認できます。パスワードやハッシュは表示しません。
-
-```sql
-SELECT f.flower_id, f.user_id, ft.flower_name, f.flower_nickname,
-       f.started_on, f.ended_on, f.status
-FROM flowers f JOIN flower_types ft ON ft.flower_type_id = f.flower_type_id;
-
-SELECT f.flower_id, c.care_name, c.interval_days, c.next_care_date,
-       DATEDIFF(c.next_care_date, f.started_on) AS days_after_registration
-FROM flowers f JOIN care_tasks c ON c.flower_id = f.flower_id
-ORDER BY f.flower_id, c.interval_days;
-
-SELECT user_id, COUNT(*) AS active_count
-FROM flowers WHERE status = 'ACTIVE' GROUP BY user_id;
-
-SELECT flower_id, COUNT(*) AS task_count
-FROM care_tasks GROUP BY flower_id;
-```
-
-登録直後はdays_after_registrationが1と3、active_countが各1、task_countが各2になることを確認します。全体初期化テストだけでは実際の花の保存と予定の内容までは検証できません。実DBでの同時登録・失敗時のロールバック確認は残っています。お別れが未実装なので、登録した花は今回の画面から終了できません。
-
-## 今日のお世話一覧
-
-HomeController → CareService → UserRepository・CareTaskRepository → DBの順に読み取ります。ログイン情報からユーザーを特定し、次の条件をすべて満たすcare_tasksだけを検索します。
-
-- 花の所有者がログイン中ユーザーである。
-- 花の状態がACTIVEである。
-- next_care_dateが今日以前（<=）である。
-
-今日の日付は既存DateTimeConfigのClockから日本時間で取得します。1回の画面表示で取得する「今日」は一つにして、検索と表示の間で日付がずれないようにしています。予定日の古い順、同じ日ならcare_task_id順です。1行を1件として読み取り、遅延日数分の行を生成しません。
-
-花がいない場合は従来の花なしホーム、花がいて予定が0件なら「今日のお世話はありません。」を表示します。各カードにはお世話名、予定日、「今日が予定日」または「予定日を過ぎています」を表示します。カード内の「できた」から完了を記録できます。説明を開くと、花種類とお世話名に対応するcare_templatesの説明が読めます。茎の共通補足と延命剤の注意も表示します。説明用のDTOやJavaScriptは追加していません。
-
-追加・変更した主なファイルはCareService.java、HomeController.java、CareTaskRepository.java、home.html、flower.cssです。検索には既存のfindDueTasksを利用し、同日内の並び順だけを追加しました。DBスキーマ、既存マスタ、予定日、完了履歴を変更する処理はありません。
-
-### テスト
-
-```powershell
-.\mvnw.cmd "-Dtest=UserServiceTest,AuthWebTest,FlowerServiceTest,FlowerWebTest,CareServiceTest,HomeCareWebTest" verify
-```
-
-CareServiceTestはテスト専用H2のメモリ内DBで実際のRepositoryを動かし、今日・期限超過・未来・他ユーザー・終了済み・同日順序・説明取得を検証します。HomeCareWebTestはホームの表示、件数、空状態、未認証アクセスを確認します。既存の認証・花登録テストも実行します。
-
-H2はpom.xmlのtestスコープなので本番アプリには入りません。テストクラス内だけにH2接続とcreate-dropを指定し、その一時DBを作成・破棄します。通常のapplication.propertiesのMySQL接続、ddl-auto=none、SQL自動実行無効の設定は維持しています。H2での成功はMySQL固有の動作検証の代わりにはなりません。
-
-上記は一覧表示までの40テストです。完了機能を含むテストの実行方法は次節に記載します。MySQLの環境変数を設定した環境では、通常の `.\mvnw.cmd clean verify` で全件を実行してください。
-
-### 実ブラウザとMySQLでの確認
-
-1. 既存の方法でFLORIE_DB_PASSWORDを設定し、`.\mvnw.cmd clean verify`、続いて `.\mvnw.cmd spring-boot:run` を実行します。SQLの再投入は不要です。
-2. ログインして http://localhost:8080/home を開きます。花がいる場合は今日以前の予定だけが表示されることを確認します。登録当日など全予定が未来なら、0件のメッセージになります。
-3. 同じ画面を再読み込みしても、同じお世話が増えないことを確認します。完了前の再読み込みでは予定や履歴が変更されないことを確認します。
-4. 花がいない別ユーザーで従来の空状態を確認します。他ユーザーの予定が見えないことも確認します。
-5. ログアウト後に/homeを直接開き、ログイン画面へ戻ることを確認します。
-
-MySQLにflorie_appで接続し、以下の読み取り用SELECTと画面を比較できます。メールの例はログイン中ユーザーのものに置き換えます。パスワードやハッシュは取得しません。
-
-```sql
-SELECT DATE(UTC_TIMESTAMP() + INTERVAL 9 HOUR) AS today_in_japan;
-
-SELECT t.care_task_id, t.care_name, t.next_care_date,
-       CASE
-         WHEN t.next_care_date < DATE(UTC_TIMESTAMP() + INTERVAL 9 HOUR) THEN '期限超過'
-         WHEN t.next_care_date = DATE(UTC_TIMESTAMP() + INTERVAL 9 HOUR) THEN '今日'
-         ELSE '未来・表示対象外'
-       END AS expected_display
-FROM care_tasks t
-JOIN flowers f ON f.flower_id = t.flower_id
-JOIN users u ON u.user_id = f.user_id
-WHERE u.email = '自分のメールアドレス'
-  AND f.status = 'ACTIVE'
-ORDER BY t.next_care_date, t.care_task_id;
-```
-
-上の結果のうち「未来・表示対象外」を除いた件数・名前が、画面と一致することを確認してください。期限超過のデータがまだない場合は、予定日の翌日以降に再表示して確認できます。確認のために既存の予定日を書き換えたり、PC時計を変更したりする必要はありません。日付別の条件は自動テストでも検証します。
-
-未完了の予定は期限を過ぎても表示され続けます。「できた」で完了すると履歴を1件追加し、次回予定日を更新します。
-
-## お世話完了
-
-### 処理と変更ファイル
-
-ホームのお世話カードの「できた」からPOST `/care-tasks/{taskId}/complete` を送信します。ThymeleafのフォームがCSRFトークンを付け、Spring Securityが検証します。GETでは更新しません。
-
-CareController → CareService.completeCare → UserRepository・CareTaskRepository・CareRecordRepository → DBの順に処理します。新規ファイルはCareController.java、CareCompletionException.java、CareCompletionTest.java、CareCompletionWebTest.javaです。CareService、CareTaskRepository、home.html、flower.cssと既存HomeCareWebTestを更新しています。Entity・DB定義・マスタ・SQL・依存ライブラリは変更していません。
-
-1. ログインユーザーのusers行をロックする（花登録と同じ順序）。
-2. task IDとユーザーIDの両方で対象タスクを検索し、PESSIMISTIC_WRITEでロックする。
-3. 花がACTIVE、予定日が今日以前、周期が1日以上であることを確認する。
-4. 既存Clockによる日本時間の今日をcompleted_onとして、対象タスクとともにcare_recordsへ1件保存する。
-5. 実際の完了日＋interval_daysをnext_care_dateへ保存する。
-6. 成功メッセージを付けてホームへリダイレクトする。未来になった予定は今日の一覧から消える。
-
-対象が存在しない、他ユーザー、ENDED、未来の予定は更新しません。他ユーザーと不存在については同じメッセージです。完了日やユーザーIDはブラウザから受け取りません。アプリの状態名はACTIVE / ENDEDで、ENDという状態はありません。
-
-Service全体を@Transactionalで囲みます。履歴のINSERTと予定のUPDATEをそれぞれflushしますが、flushはコミットではありません。どちらかに失敗したら例外をService外へ返し、両方をロールバックします。Controllerは内部SQLを表示せず、ホームに簡潔なエラーを表示します。メッセージはSpring MVCのFlash属性で一度だけ表示します。
-
-同時送信はロック待ちとなり、後の処理は更新後の予定日を再確認します。1回目で次回日が未来に移るため、2回目は拒否されます。古い予定日から日数を足したり、遅延回数分の履歴を追加したりしません。次回の予定日を迎えれば、その日の新しいお世話として再度完了できます。
-
-### 自動テスト
-
-```powershell
-.\mvnw.cmd "-Dtest=UserServiceTest,AuthWebTest,FlowerServiceTest,FlowerWebTest,CareServiceTest,HomeCareWebTest,CareCompletionTest,CareCompletionWebTest" verify
-```
-
-実MySQLを使わない54件を実行します。MySQLでの既存アプリ初期化テスト1件も含めると合計55件です。MySQL用環境変数を設定した環境では `.\mvnw.cmd clean verify` で全件実行できます。
-
-CareCompletionTestの9件は、専用H2でServiceの実トランザクションを実行します。正常完了、日本時間の実日付、期限超過、履歴1件、次回日、一覧からの除外、未来・他ユーザー・ENDED・不存在の拒否、再送、履歴INSERT後の失敗時ロールバック、2要求の同時完了を確認します。テスト自体はトランザクションで囲まず、Serviceの処理後に別の読み取りで永続化結果を確認します。同時要求の再現にのみ2スレッドを使い、アプリ本体にマルチスレッド処理は追加していません。
-
-CareCompletionWebTestの5件は、POST・CSRF・認証、ブラウザからの日付やユーザー指定を採用しないこと、成功とエラーの通知、GET・不正形式IDの拒否を確認します。既存HomeCareWebTestは完了フォームを検証するように更新しています。
-
-H2はテスト専用であり、実MySQLのテストガーベラ・ユーザー・マスタに接続しません。MySQL固有のロック動作は実環境で別途確認が必要です。
-
-### 実ブラウザ・実MySQLの確認手順
-
-1. 既存の方法でFLORIE_DB_PASSWORDを設定して `.\mvnw.cmd clean verify` を実行し、`.\mvnw.cmd spring-boot:run` で起動します。SQLを再投入しません。
-2. 自分のアカウントでホームを開き、実際にお世話を済ませたタスクだけ「できた」を押します。花別説明や延命剤製品の案内に沿った手入れで完了できます。
-3. 記録完了メッセージが表示され、そのタスクが今日の一覧から消えることを確認します。他の未完了タスクは残ります。
-4. MySQLで以下の読み取り専用SELECTを実行します。メールは自分のものへ置き換え、必要なら完了前にも実行して件数を比較してください。パスワード・ハッシュは取得しません。
-
-```sql
-SELECT t.care_task_id, t.care_name, t.interval_days, t.next_care_date,
-       COUNT(r.care_record_id) AS record_count,
-       MAX(r.completed_on) AS last_completed_on,
-       DATE_ADD(MAX(r.completed_on), INTERVAL t.interval_days DAY) AS expected_next_date
-FROM care_tasks t
-JOIN flowers f ON f.flower_id = t.flower_id
-JOIN users u ON u.user_id = f.user_id
-LEFT JOIN care_records r ON r.care_task_id = t.care_task_id
-WHERE u.email = '自分のメールアドレス'
-  AND f.status = 'ACTIVE'
-GROUP BY t.care_task_id, t.care_name, t.interval_days, t.next_care_date;
-```
-
-完了したタスクのrecord_countが1だけ増え、last_completed_onが日本時間の今日、next_care_dateとexpected_next_dateが一致することを確認します。水替えなら翌日、茎なら3日後です。期限超過でも現在日基準です。
-
-二重送信は、完了前に同じホームを2タブ開き、一つ目で完了した後、古い二つ目の画面でも同じタスクの「できた」を押して確認できます。二つ目は拒否され、履歴件数と次回日は増えません。ログアウトした後、古い画面から送信しても更新されないことを確認します。
-
-未来や他ユーザーのIDを直接送信するケース、ロールバックは自動テストで検証済みです。確認のために実DBの予定日や所有者を書き換える必要はありません。実MySQLでは、ブラウザでユーザーが「できた」を押した対象だけを通常の完了処理で更新します。お別れ・終了・お花畑・履歴一覧・編集は今回未実装です。
-
-
-## 花とのお別れ
-
-ホームのOwakare → GET `/flowers/{flowerId}/end`（確認のみ） → POST `/flowers/{flowerId}/end`（確定） → 花なしホーム、という流れです。確認画面のHomeはキャンセル用の通常リンクです。GETやキャンセルでは保存処理を呼びません。「お花畑に送る」は確定資料・UI06の表記です。お花畑の画面自体は次工程です。
-
-FlowerController → FlowerService → 既存UserRepository・FlowerRepository → DBの構造です。ログイン情報からユーザーを特定し、花IDとユーザーIDの両方で検索します。ACTIVEだけを終了でき、他人・不存在・ENDEDは拒否します。確認表示時だけでなく確定時にも再確認します。
-
-`endFlower`の@Transactional内で、最初にusers行をロックします。花登録・お世話完了も同じロックを使うため、同じ利用者の更新は順番に進みます。後から来た再送はENDEDを検出し、終了日を上書きしません。既存Clockによる日本時間の今日をended_onへ、ENDEDをstatusへ同時に保存します。ブラウザから終了日や所有者は受け取りません。
-
-Flower、care_tasks、care_recordsは削除しません。予定日・完了履歴も更新しません。既存のホーム取得条件がACTIVEのため、終了後の花と予定はホームから外れ、新しい花を登録できます。スキーマ・Entity・Repository・SQL・マスタ・依存関係の変更はありません。
-
-追加ファイル：FlowerEndException.java、flower-end.html、FlowerEndTest.java、FlowerEndWebTest.java。
-変更ファイル：FlowerService.java、FlowerController.java、home.html、flower.css、本README。
-
-### テスト
-
-```powershell
-.\mvnw.cmd "-Dtest=UserServiceTest,AuthWebTest,FlowerServiceTest,FlowerWebTest,CareServiceTest,HomeCareWebTest,CareCompletionTest,CareCompletionWebTest,FlowerEndTest,FlowerEndWebTest" verify
-```
-
-上記は実MySQLを使わない68件です。追加14件は確認表示・キャンセル導線・確定・日本時間の終了日・データ保持・今日のお世話からの除外・新しい花の登録・他人/不存在/再終了の拒否・保存失敗時ロールバック・未ログイン/CSRFなしの拒否を確認します。FlowerEndTestは専用の一時H2を使い、実MySQLの花を変更しません。既存のMySQL初期化テスト1件を含めた全件数は69件です。
-
-### 実ブラウザ・実MySQLの確認
-
-1. 既存の方法で環境変数を設定したPowerShellで `.\mvnw.cmd clean verify`、続いて `.\mvnw.cmd spring-boot:run` を実行します。SQLは再投入しません。
-2. ログインし、以下のSELECTで対象のflower_id・status・ended_onと予定・履歴件数を控えます。
-3. ホームのOwakareから確認画面を開き、種類とニックネームを確認します。Homeでキャンセルし、状態・終了日・件数が変化しないことを確認します。
-4. 再度確認画面を開き、「お花畑に送る」で確定します。完了メッセージと花なしホームが表示され、以前のお世話が表示されないことを確認します。
-5. 同じSELECTで、元の花がENDED、日本時間の今日がended_onに保存され、予定・履歴の件数が変わっていないことを確認します。
-6. 元の確認URLを再度開いてもホームに戻され、終了日が上書きされないことを確認します。New Flowerから新しい花を登録でき、元の花が残っていることも確認できます。
-7. ログアウト後は確認URLがログイン画面へ戻ることを確認します。
-
-```sql
-SELECT f.flower_id, f.flower_nickname, f.status, f.started_on, f.ended_on,
-       (SELECT COUNT(*) FROM care_tasks t WHERE t.flower_id = f.flower_id) AS task_count,
-       (SELECT COUNT(*) FROM care_records r
-        JOIN care_tasks t ON t.care_task_id = r.care_task_id
-        WHERE t.flower_id = f.flower_id) AS record_count
-FROM flowers f
-JOIN users u ON u.user_id = f.user_id
-WHERE u.email = '自分のメールアドレス'
-ORDER BY f.flower_id;
-```
-
-実MySQLでの終了操作とロックの動作確認は利用者の環境で行います。お花畑・思い出・復元・編集・履歴一覧はまだ実装していません。
-
-今回の検証結果：上記68件はすべて成功（失敗0・エラー0）、Maven verifyはBUILD SUCCESSでした。実MySQLを使用する初期化テスト1件は今回実行していません。確認画面のHTMLをChromeで表示し、幅320・390・1280pxで横はみ出しがないことを確認しました。
-
-
-## お花畑・思い出表示
-
-ホームのGarden → GET `/garden` → 花を選択 → GET `/garden/{flowerId}` の順に表示します。GardenController → FlowerService → 既存Repository → DBの構造で、ユーザーはログイン情報から特定します。
-
-一覧は既存の`findByUserUserIdAndStatusOrderByEndedOnDesc`で、自分のENDEDだけを終了日の新しい順に取得します。同日の並び順は固定していません。詳細は花IDとユーザーIDで取得し、さらにENDEDを確認します。他人・ACTIVE・不存在は同じメッセージでお花畑へ戻します。未ログインは既存Spring Securityによりログイン画面へ戻ります。
-
-今回の「Figmaを最優先する」という指定に従い、一覧はUI07の3列配置、種類・ニックネーム・既存の共通仮SVGとし、日付はUI09のMemoryカードへまとめました。詳細設計5.12の一覧日付とUI07の差は、確定資料8.2で保留されていた表示差分です。一緒に過ごした日数は追加していません。空の場合はUI08の「まだお花がいません」「お世話を終えたお花がここに並びます」を表示します。多数の花は次の段へ並べ、縦スクロールします。
-
-思い出には種類・ニックネーム・共通仮SVG・お世話を始めた日・お世話を終えた日を表示します。日付は既存DATEをyyyy/MM/ddで表示します。メモ、写真、予定一覧、完了履歴一覧、編集・復元は実装しません。
-
-読み取り用Serviceは`@Transactional(readOnly = true)`とし、検索だけを行います。readOnly指定だけに依存せず、Controller・Serviceとも更新・削除・Entityへの値設定を呼ばず、POSTの入口も設けていません。CareTask・CareRecordのRepositoryもこの機能では使いません。DBスキーマ、SQL、マスタ、Entity、Repository、依存ライブラリ、docsは変更していません。
-
-追加：GardenController.java、garden.html、memory.html、GardenTest.java。
-変更：FlowerService.java、home.html、flower.css、README.md。
-
-### テスト方法
-
-```powershell
-.\mvnw.cmd "-Dtest=UserServiceTest,AuthWebTest,FlowerServiceTest,FlowerWebTest,CareServiceTest,HomeCareWebTest,CareCompletionTest,CareCompletionWebTest,FlowerEndTest,FlowerEndWebTest,GardenTest" verify
-```
-
-GardenTestは10件。専用H2と実Service・Repository・Controller・Thymeleaf・Securityを使用し、取得条件・終了日順・空状態・詳細日付・HTMLエスケープ・直接アクセス拒否・未ログイン・GETの繰り返しでのデータ保持・遷移・POST不存在を確認します。実MySQLを使わないテストは既存68件と合わせて78件です。MySQL用の既存初期化テスト1件を含めると全79件です。
-
-### 実ブラウザ・実MySQLでの確認
-
-1. 既存の環境変数を設定済みのPowerShellで `.\mvnw.cmd clean verify`、続いて `.\mvnw.cmd spring-boot:run` を実行します。SQLは再投入しません。
-2. ログインし、ホームのGardenからお花畑へ移動します。終了済み「テストガーベラ」が表示され、ACTIVEの花が表示されないことを確認します。
-3. 花を選び、種類・ニックネーム・開始日・終了日が下記SELECTと一致することを確認します。Gardenで一覧へ、Homeでホームへ戻れます。
-4. 一覧・思い出を数回再読み込みし、下記SELECTの結果と件数が変わらないことを確認します。
-5. 終了済みの花がない別アカウントでは空状態になることを確認します。そこで元の花の詳細URLを直接開いても、表示されずお花畑へ戻ることを確認します。
-6. 自分のACTIVEのIDや存在しないIDでも思い出が開かないこと、ログアウト後は両画面がログイン画面へ戻ることを確認します。確認用に実データを編集・削除する必要はありません。
-
-```sql
-SELECT f.flower_id, ft.flower_name, f.flower_nickname,
-       f.status, f.started_on, f.ended_on
-FROM flowers f
-JOIN flower_types ft ON ft.flower_type_id = f.flower_type_id
-JOIN users u ON u.user_id = f.user_id
-WHERE u.email = '自分のメールアドレス'
-ORDER BY f.ended_on DESC;
-
-SELECT COUNT(*) AS flower_count FROM flowers;
-SELECT COUNT(*) AS task_count FROM care_tasks;
-SELECT COUNT(*) AS record_count FROM care_records;
-```
-
-最終的な8種類の花イラストと正式フォント等の調整は別工程です。今回の仮SVGは共通なので、種類は併記した花名で区別します。
-
-今回の検証結果：78件すべて成功（失敗0・エラー0）、Maven verifyはBUILD SUCCESS。実MySQL用の初期化テスト1件は今回実行していません。一覧・空状態・思い出の3画面をChromeで確認し、320・390・1280px幅で横はみ出しがないことを確認しました。
+- 実機iPhone Safariで、キーボード表示時を含む操作感を追加確認する。
+- 端末ごとのフォント差によるロゴ表示の違いを小さくする。
