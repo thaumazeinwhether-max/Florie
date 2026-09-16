@@ -21,3 +21,7 @@
 # OSが作るファイル
 Thumbs.db
 .DS_Store
+
+# 開発支援用の内部資料
+/AGENTS.md
+/docs/00_Florie_実装前整理資料.md
