@@ -43,9 +43,9 @@ class FlowerWebTest {
         String[] names = {"ガーベラ", "バラ", "チューリップ", "カーネーション", "ひまわり", "ダリア", "アネモネ", "ラナンキュラス"};
         List<FlowerType> types = new ArrayList<>();
         for (int i = 0; i < names.length; i++) {
-            FlowerType type = mock(FlowerType.class);
+            FlowerType type = spy(new FlowerType());
             when(type.getFlowerTypeId()).thenReturn(20L + i);
-            when(type.getFlowerName()).thenReturn(names[i]);
+            type.setFlowerName(names[i]);
             when(type.getCareGuidance()).thenReturn("水は少なめに。茎先が3～5cmほどつかる量を目安にし、水切れに気をつけましょう。");
             types.add(type);
         }
@@ -120,6 +120,7 @@ class FlowerWebTest {
         Flower flower = new Flower();
         flower.setFlowerType(flowerService.getFlowerTypes().get(1));
         flower.setFlowerNickname("<ばらちゃん>");
+        flower.setStartedOn(java.time.LocalDate.of(2026, 9, 14));
         when(flowerService.getCurrentFlower("test@example.com")).thenReturn(Optional.of(flower));
         MvcResult active = mvc.perform(get("/home").with(user("test@example.com")))
                 .andExpect(content().string(containsString("&lt;ばらちゃん&gt;")))

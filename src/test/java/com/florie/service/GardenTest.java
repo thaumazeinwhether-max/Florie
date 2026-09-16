@@ -56,7 +56,7 @@ class GardenTest {
         users.saveAndFlush(user);
         FlowerType type = new FlowerType();
         type.setFlowerName("ガーベラ" + UUID.randomUUID().toString().substring(0, 4));
-        type.setIllustrationPath("");
+        type.setIllustrationPath("/images/flowers/gerbera.svg");
         type.setDisplayOrder(1);
         types.saveAndFlush(type);
         flower = new Flower();
@@ -84,7 +84,7 @@ class GardenTest {
     @Test
     void emptyGardenShowsGuidance() throws Exception {
         MvcResult result = mvc.perform(get("/garden").with(user(user.getEmail())))
-                .andExpect(status().isOk()).andExpect(content().string(containsString("まだお花がいません")))
+                .andExpect(status().isOk()).andExpect(content().string(containsString("あなたのGardenは、これから。")))
                 .andExpect(content().string(containsString("ここに並びます"))).andReturn();
         preview("garden-empty", result);
     }

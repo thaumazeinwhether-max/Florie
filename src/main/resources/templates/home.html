@@ -2,7 +2,7 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>ホーム | Florie</title>
     <link rel="stylesheet" th:href="@{/css/auth.css}">
     <link rel="stylesheet" th:href="@{/css/flower.css}">
@@ -14,7 +14,7 @@
         <span><span th:text="${nickname}"></span>さん</span>
         <form th:action="@{/logout}" method="post"><button type="submit">ログアウト</button></form>
     </div>
-    <main>
+    <main class="home-main">
         <h1 class="visually-hidden">ホーム</h1>
         <p class="notice home-notice" role="status" th:if="${flowerEnded}" th:text="${flowerEnded}"></p>
         <p class="notice home-notice error" role="alert" th:if="${flowerError}" th:text="${flowerError}"></p>
@@ -27,7 +27,7 @@
             <h2 th:text="${currentFlower.flowerType.flowerName}"></h2>
             <p class="flower-nickname" th:text="${currentFlower.flowerNickname}"></p>
             <p class="care-note">お迎えした日：<time th:datetime="${currentFlower.startedOn}" th:text="${#temporals.format(currentFlower.startedOn, 'yyyy/MM/dd')}"></time></p>
-            <div th:replace="~{fragments/flower-layout :: flowerPlaceholder}"></div>
+            <img th:replace="~{fragments/flower-layout :: flowerIllustration(${currentFlower.flowerType})}">
         </section>
         <section class="home-lower" th:classappend="${currentFlower == null} ? 'home-empty' : 'home-active'">
             <div th:if="${currentFlower == null}" class="empty-flower-message">
@@ -53,13 +53,15 @@
                         </form>
                     </li>
                 </ul>
-                <h2>お世話のヒント</h2>
+                <aside class="home-hints" aria-labelledby="hints-title">
+                <h2 id="hints-title">お世話のヒント</h2>
                 <p class="guidance-card" th:text="${currentFlower.flowerType.careGuidance}"></p>
                 <p class="care-note">直射日光と冷暖房の風が直接当たる場所を避け、涼しい場所に飾りましょう。</p>
                 <p class="care-note">予定を待たず、水が濁ったり、ぬめりが出たりしたら水替え・洗浄を行う。</p>
                 <p class="care-note">水が減って切り口が出そうなら、次の予定まで放置しない。</p>
                 <p class="care-note">茎が短くなったら、切り口が水につく小さな花瓶に替える。</p>
                 <p th:replace="~{fragments/flower-layout :: preservativeNote}"></p>
+                </aside>
             </div>
             <nav class="flower-nav home-nav" aria-label="画面移動">
                 <a class="round-link" th:href="@{/home}" aria-current="page">Home</a>

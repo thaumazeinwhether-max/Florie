@@ -2,8 +2,8 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>お花畑 | Florie</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Garden | Florie</title>
     <link rel="stylesheet" th:href="@{/css/auth.css}">
     <link rel="stylesheet" th:href="@{/css/flower.css}">
 </head>
@@ -12,17 +12,21 @@
     <header th:replace="~{fragments/flower-layout :: header}"></header>
     <main class="garden-content">
         <h1>Garden</h1>
+        <p class="page-intro">大切にした一輪が、ここに少しずつ。</p>
+        <p class="garden-help" th:unless="${#lists.isEmpty(endedFlowers)}">お花をタップして、思い出をひらく</p>
         <p class="notice error" role="alert" th:if="${gardenError}" th:text="${gardenError}"></p>
         <div class="garden-empty" th:if="${#lists.isEmpty(endedFlowers)}">
-            <p>まだお花がいません</p>
-            <p>お世話を終えたお花が<br>ここに並びます</p>
+            <div class="garden-sprout" aria-hidden="true"></div>
+            <p>あなたのGardenは、これから。</p>
+            <p>お世話を終えたお花が、<br>ここに並びます。</p>
         </div>
         <ul class="garden-flowers" th:unless="${#lists.isEmpty(endedFlowers)}">
             <li th:each="flower : ${endedFlowers}">
                 <a class="garden-flower" th:href="@{/garden/{id}(id=${flower.flowerId})}">
-                    <div th:replace="~{fragments/flower-layout :: flowerPlaceholder}"></div>
-                    <span th:text="${flower.flowerType.flowerName}"></span>
-                    <span th:text="${flower.flowerNickname}"></span>
+                    <img th:replace="~{fragments/flower-layout :: flowerIllustration(${flower.flowerType})}">
+                    <span class="garden-nickname" th:text="${flower.flowerNickname}"></span>
+                    <span class="garden-type" th:text="${flower.flowerType.flowerName}"></span>
+                    <span class="memory-link-hint" aria-hidden="true">思い出を見る →</span>
                 </a>
             </li>
         </ul>

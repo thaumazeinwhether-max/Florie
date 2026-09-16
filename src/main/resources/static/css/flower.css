@@ -1,145 +1,139 @@
-/* Figmaの390px幅を基準に、追加の案内と8種類は縦スクロールで表示する。 */
-.flower-page { width: 100%; max-width: 390px; min-height: 100vh; margin: 0 auto; }
+/* 8pxを基準に余白を揃える。画面の高さを固定せず、内容に合わせてスクロールする。 */
+.flower-page {
+    width: 100%; max-width: 430px; min-height: 100vh; min-height: 100dvh; margin: 0 auto;
+    display: flex; flex-direction: column;
+}
+.flower-page > main { flex: 1; min-width: 0; }
 .flower-header {
-    height: 76px;
-    border-radius: 0 0 8px 8px;
-    background: #a79b83;
-    box-shadow: 0 3px 4px #00000025;
-    overflow: hidden;
+    flex-shrink: 0; height: calc(76px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top); border-radius: 0 0 16px 16px;
+    background: #a79b83; box-shadow: 0 2px 4px #463c3018; overflow: hidden;
 }
 .flower-header .logo { transform: scale(.56); transform-origin: top center; }
-.flower-register-content { padding: 90px 32px 0; }
-.flower-register-content h1 {
-    color: white;
-    font-size: 24px;
-    line-height: 1.5;
-    text-align: center;
-    margin: 0 0 14px;
-    text-shadow: 0 3px 3px #00000025;
-}
+.flower-register-content, .flower-end-content { padding: 32px 24px 0; }
+.flower-register-content h1, .flower-end-content h1 { margin: 0; font-size: 24px; line-height: 1.5; text-align: center; }
+.page-intro { margin: 8px 0 24px; text-align: center; color: var(--muted); font-size: 14px; }
+.flower-illustration { display: block; width: 200px; height: auto; aspect-ratio: 220 / 300; object-fit: contain; margin: 0 auto; }
 .flower-choices { margin: 0; padding: 0; border: 0; min-width: 0; }
-.flower-choice { display: block; position: relative; margin-bottom: 20px; color: #181c19; cursor: pointer; }
-.flower-choice input {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    opacity: 0;
-    padding: 0;
-}
+.flower-choice { display: block; position: relative; margin-bottom: 12px; cursor: pointer; }
+.flower-choice input { position: absolute; width: 1px; height: 1px; opacity: 0; padding: 0; }
 .choice-name {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    min-height: 48px;
-    padding: 12px 16px;
-    background: #adc0b4;
-    border: 2px solid transparent;
-    border-radius: 8px;
-    box-shadow: 0 3px 4px #00000025;
-    font-weight: bold;
+    display: flex; align-items: center; gap: 16px; min-height: 88px; padding: 8px 16px;
+    border: 2px solid transparent; border-radius: 16px; background: #c2cfbd; font-size: 16px;
 }
-.flower-choice input:checked + .choice-name { border-color: #4c6555; }
-.flower-choice input:checked + .choice-name::after { content: "✓"; font-size: 18px; }
-.flower-choice input:focus-visible + .choice-name { outline: 3px solid #4c6555; outline-offset: 3px; }
-.choice-guidance { display: none; padding: 14px; margin-top: 8px; background: #e6ebe1; border-radius: 8px; line-height: 1.8; }
+.choice-name .flower-illustration { flex-shrink: 0; width: 48px; height: 66px; margin: 0; }
+.choice-name > span { min-width: 0; flex: 1; }
+.flower-choice input:checked + .choice-name { border-color: #46634d; background: #dae3d2; }
+.flower-choice input:checked + .choice-name::after { content: "✓"; font-size: 22px; color: #355b45; }
+.flower-choice input:focus-visible + .choice-name { outline: 3px solid #355b45; outline-offset: 3px; }
+.choice-guidance { display: none; padding: 16px; margin-top: 8px; background: var(--surface); border-radius: 12px; font-size: 14px; font-weight: normal; }
 .flower-choice input:checked ~ .choice-guidance { display: block; }
-.flower-nickname-field { margin-top: 64px; }
-.preparation-guide { padding: 16px; margin: 32px 0; background: #e6ebe1; border-radius: 8px; line-height: 1.8; }
+.flower-nickname-field { margin-top: 32px; }
+.preparation-guide { padding: 20px; margin: 24px 0; background: #e6ebe1; border-radius: 16px; }
 .preparation-guide h2 { font-size: 16px; margin: 0 0 12px; }
-.preparation-guide p { margin: 0 0 14px; }
+.preparation-guide p { font-size: 14px; margin: 0 0 16px; }
 .preparation-guide p:last-child { margin-bottom: 0; }
-.care-note { font-size: 12px; line-height: 1.8; }
-.flower-nav { display: flex; gap: 8px; padding: 44px 12px 20px; align-items: flex-start; }
+.care-note { font-size: 14px; line-height: 1.8; }
+/* 下部は本文を覆わない通常配置。iPhoneのホームインジケーター分の余白も確保する。 */
+.flower-nav {
+    display: flex; justify-content: space-between; gap: 12px; padding: 24px 16px max(24px, env(safe-area-inset-bottom));
+    align-items: center; margin-top: auto;
+}
 .round-link {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    flex: 0 1 120px;
-    width: 120px;
-    aspect-ratio: 1;
-    border-radius: 50%;
-    border: 0;
-    padding: 8px;
-    background: #8a7e66;
-    box-shadow: inset 0 3px 4px #00000030;
-    color: white;
-    font: inherit;
-    font-weight: bold;
-    font-size: 20px;
-    text-decoration: none;
-    text-align: center;
-    line-height: 1.2;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    flex: 0 1 100px; width: 100px; min-height: 76px; aspect-ratio: 1;
+    border-radius: 50%; padding: 12px 8px; background: var(--button); color: white;
+    font-size: 16px; font-weight: bold; line-height: 1.4; text-decoration: none; text-align: center;
 }
-.round-link small { font-size: 10px; }
-.round-link:disabled { color: #f1eee8; cursor: default; }
-.round-link:not(:disabled):hover { background: #786d58; }
-.session-bar { display: flex; gap: 12px; justify-content: space-between; align-items: start; padding: 10px 16px; font-size: 12px; }
-.session-bar > span { overflow-wrap: anywhere; }
+.round-link:hover { background: #615640; }
+.round-link[aria-current="page"] { outline: 1px solid #eee8db; outline-offset: -6px; }
+.round-link:focus-visible { outline: 3px solid #355b45; outline-offset: 4px; }
+.round-link small { margin-top: 4px; font-size: 12px; font-weight: normal; }
+.session-bar { display: flex; gap: 12px; justify-content: space-between; align-items: center; padding: 8px 24px; font-size: 13px; }
+.session-bar > span { min-width: 0; }
 .session-bar form { flex-shrink: 0; }
-.session-bar button { padding: 0; border: 0; font: inherit; color: inherit; background: transparent; text-decoration: underline; cursor: pointer; }
-.home-notice { margin: 12px 20px; }
-.empty-flower-space { height: 299px; }
-.current-flower { padding: 32px 24px 0; text-align: center; color: white; }
-.current-flower h2, .flower-nickname { font-size: 16px; margin: 0; overflow-wrap: anywhere; }
-.flower-nickname { font-weight: bold; }
-.flower-placeholder { width: 180px; height: 230px; margin: 10px auto 0; }
-.flower-placeholder svg { display: block; width: 100%; height: 100%; }
-.home-lower { background: #a79b83; border-radius: 8px 8px 0 0; }
-.empty-flower-message { height: 260px; display: flex; justify-content: center; align-items: center; text-align: center; }
-.empty-flower-message p { font-size: 24px; line-height: 1.25; font-weight: bold; color: white; text-shadow: 0 3px 3px #00000025; }
-.home-nav { justify-content: space-between; padding: 8px 8px 32px; }
-.middle-link { margin-top: 26px; }
-.home-care-guide { padding: 16px 24px; }
-.home-care-guide h2 { color: white; font-size: 24px; margin: 0 0 24px; text-shadow: 0 3px 3px #00000025; }
-.guidance-card { background: #adc0b4; border-radius: 8px; padding: 16px; line-height: 1.8; box-shadow: 0 3px 4px #00000025; }
+.session-bar button { min-height: 44px; padding: 8px; border: 0; color: inherit; background: transparent; text-decoration: underline; cursor: pointer; }
+.home-notice { margin: 12px 24px; }
+.empty-flower-space { height: clamp(80px, 20vh, 160px); }
+.current-flower { padding: 8px 24px 0; text-align: center; }
+.current-flower h2 { margin: 0; font-size: 14px; color: var(--muted); font-weight: normal; }
+.flower-nickname { margin: 4px 0; font-size: 22px; font-weight: bold; line-height: 1.5; }
+.current-flower .care-note { margin: 8px 0 0; font-size: 13px; }
+.current-flower .flower-illustration { width: 180px; }
+.home-lower { background: #a79b83; border-radius: 24px 24px 0 0; }
+.home-main { display: flex; flex-direction: column; }
+.home-main .home-lower { margin-top: auto; }
+.empty-flower-message { min-height: 200px; display: flex; justify-content: center; align-items: center; padding: 24px; text-align: center; }
+.empty-flower-message p { font-size: 22px; font-weight: bold; line-height: 1.7; }
+.home-care-guide { padding: 24px 20px 0; }
+.home-care-guide h2 { font-size: 22px; margin: 0 0 16px; }
+.guidance-card { background: #d4decd; border-radius: 16px; padding: 16px; font-size: 14px; }
 .today-care-list { list-style: none; margin: 0; padding: 0; }
-.today-care-card { margin: 0 0 24px; padding: 16px; border-radius: 8px; background: #adc0b4; box-shadow: 0 3px 4px #00000025; overflow-wrap: anywhere; }
-.today-care-card h3 { margin: 0 0 12px; font-size: 22px; color: white; text-shadow: 0 2px 3px #00000035; }
-.care-due-label { margin: 0; font-size: 13px; font-weight: bold; }
-.care-due-label.overdue { color: #694329; }
-.care-details { font-size: 13px; line-height: 1.8; }
-.care-details summary { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
-.care-complete-form { margin-top: 16px; }
-.flower-end-content { padding: 90px 32px 0; text-align: center; color: white; font-weight: bold; }
-.flower-end-content h1 { margin: 0; font-size: 24px; text-shadow: 0 3px 3px #00000025; }
-.farewell-flower { width: 184px; min-height: 152px; margin: 52px auto; padding: 24px; border-radius: 50%; background: #bfd6c9; display: flex; flex-direction: column; justify-content: center; gap: 16px; }
-.farewell-flower p { margin: 0; overflow-wrap: anywhere; }
-.farewell-question { margin: 0; font-size: 16px; text-shadow: 0 3px 3px #00000025; }
-.farewell-note { margin: 16px 0 0; font-size: 12px; }
-.flower-end-content form { margin-top: 112px; }
-@media (max-width: 359px) {
-    .flower-register-content { padding-left: 24px; padding-right: 24px; }
-    .round-link { font-size: 16px; }
+.today-care-card { margin: 0 0 16px; padding: 20px; border-radius: 16px; background: #d4decd; }
+.today-care-card h3 { margin: 0 0 8px; font-size: 18px; line-height: 1.5; }
+.care-due-label { display: inline-block; margin: 0; font-size: 13px; font-weight: bold; }
+.care-due-label.overdue { color: #773d26; }
+.today-care-card .care-note { margin: 4px 0; font-size: 13px; }
+.care-details { font-size: 14px; line-height: 1.8; }
+.care-details summary { min-height: 44px; padding: 10px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
+.care-complete-form { margin-top: 12px; }
+.care-complete-form .primary-button { min-height: 52px; }
+.home-hints { margin-top: 24px; padding: 20px; border-radius: 16px; background: #e9e7dc; }
+.home-hints h2 { font-size: 16px; margin-bottom: 12px; }
+.home-hints .guidance-card { background: transparent; padding: 0; margin: 0 0 16px; font-weight: bold; }
+.home-hints .care-note { font-size: 13px; margin: 12px 0 0; }
+.home-nav { padding-top: 24px; }
+.flower-end-content { text-align: center; }
+.farewell-flower { margin: 24px 0; padding: 16px; border-radius: 80px 80px 24px 24px; background: #c4d3bf; }
+.farewell-flower .flower-illustration { width: 130px; }
+.farewell-flower p { margin: 4px 0; font-size: 14px; }
+.farewell-flower p:last-child { font-size: 20px; font-weight: bold; }
+.farewell-question { margin: 24px 0 8px; font-size: 16px; font-weight: bold; }
+.farewell-note { margin: 0; font-size: 14px; }
+.flower-end-content form { margin-top: 24px; }
+.garden-content { padding: 32px 16px; }
+.garden-content h1 { margin: 0; text-align: center; font-size: 32px; letter-spacing: .03em; }
+.garden-help { text-align: center; margin: 0 0 16px; font-size: 13px; color: var(--muted); }
+/* 輪ごとの枠線は付けず、足元の楕円と緑の淡い背景でひとつのGardenに見せる。 */
+.garden-flowers {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 8px;
+    list-style: none; margin: 0; padding: 24px 8px;
+    border-radius: 48px 48px 24px 24px;
+    background: linear-gradient(#cbd7ba30, #b2c29e70);
 }
-
-/* 一覧はFigmaの3列を基準に、花が増えたら次の段へ並べる。 */
-.garden-page { display: flex; flex-direction: column; }
-.garden-page > .flower-header { flex-shrink: 0; }
-.garden-content { flex: 1; padding: 22px 16px 40px; }
-.garden-content h1 { margin: 0 0 30px; text-align: center; font-size: 36px; color: white; text-shadow: 0 3px 3px #00000025; }
-.garden-flowers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 12px; padding: 0; margin: 0; list-style: none; }
-.garden-flower { display: block; text-decoration: none; color: white; text-align: center; font-size: 14px; font-weight: bold; border-radius: 8px; }
-.garden-flower:hover { background: #ffffff18; }
-.garden-flower span { display: block; overflow-wrap: anywhere; }
-.garden-flower .flower-placeholder { width: 90px; max-width: 100%; height: 115px; margin: 0 auto 8px; }
-.garden-empty { color: white; font-size: 24px; font-weight: bold; text-align: center; text-shadow: 0 3px 3px #00000025; }
-.garden-empty p:first-child { margin: 76px 0 138px; }
-.garden-empty p:last-child { margin: 0; }
-.garden-nav { justify-content: space-between; background: #a79b83; border-radius: 8px 8px 0 0; padding: 8px 12px 12px; margin-top: auto; }
-.memory-content { flex: 1; padding: 82px 44px 44px; }
-.memory-card { min-height: 506px; padding: 8px 12px 40px; border-radius: 8px; background: #bed6c7; color: white; font-weight: bold; }
-.memory-card h1 { font-size: 24px; text-align: center; margin: 0 0 22px; }
-.memory-flower { text-align: center; font-size: 14px; }
-.memory-flower p { margin: 0; overflow-wrap: anywhere; }
-.memory-flower .flower-placeholder { width: 80px; height: 102px; margin: 0 auto; }
-.memory-dates { font-size: 24px; margin: 40px 0 0; }
-.memory-dates dd { margin: 0; }
-.memory-dates dt:not(:first-child) { margin-top: 54px; }
+.garden-flowers li { min-width: 0; }
+.garden-flower { position: relative; display: block; padding: 8px 4px 12px; text-align: center; text-decoration: none; border-radius: 24px; }
+.garden-flower::before { content: ""; display: block; width: 80%; height: 16px; border-radius: 50%; background: #79926c30; position: absolute; top: 145px; left: 10%; }
+.garden-flower .flower-illustration { position: relative; width: 110px; height: 150px; margin: 0 auto 12px; }
+.garden-flower:hover, .garden-flower:focus-visible { background: #f4f0e766; }
+.garden-flower span { display: block; }
+.garden-nickname { font-size: 14px; font-weight: bold; line-height: 1.6; }
+.garden-type { margin-top: 4px; color: var(--muted); font-size: 12px; }
+.memory-link-hint { margin-top: 8px; font-size: 11px; text-decoration: underline; text-underline-offset: 3px; }
+.garden-empty { padding: 32px 16px 56px; text-align: center; border-radius: 48% 48% 24px 24px; background: linear-gradient(transparent, #b2c29e70); }
+.garden-empty p { margin: 12px 0; font-size: 14px; }
+.garden-empty p:nth-child(2) { font-size: 18px; font-weight: bold; }
+.garden-sprout { position: relative; width: 3px; height: 56px; margin: 40px auto 24px; background: #65816a; border-radius: 2px; }
+.garden-sprout::before, .garden-sprout::after { content: ""; position: absolute; width: 32px; height: 18px; background: #829d77; border-radius: 0 100% 0 100%; }
+.garden-sprout::before { right: 2px; top: 4px; transform: rotate(10deg); }
+.garden-sprout::after { left: 2px; top: 20px; transform: rotate(-75deg); transform-origin: left center; }
+.garden-nav { background: #a79b83; border-radius: 24px 24px 0 0; }
+.memory-content { padding: 32px 24px; }
+.memory-card { padding: 24px; border-radius: 24px; background: #c8d8c4; }
+.memory-card h1 { margin: 0 0 16px; text-align: center; font-size: 24px; font-weight: normal; letter-spacing: .06em; }
+.memory-flower { text-align: center; }
+.memory-flower .flower-illustration { width: 160px; }
+.memory-flower h2 { margin: 8px 0 4px; font-size: 22px; line-height: 1.5; }
+.memory-flower p { margin: 0; font-size: 14px; color: var(--muted); }
+.memory-dates { margin: 24px 0 0; padding-top: 16px; border-top: 1px solid #95aa8e; }
+.memory-dates dt { font-size: 13px; color: var(--muted); }
+.memory-dates dd { margin: 4px 0 0; font-size: 22px; font-variant-numeric: tabular-nums; }
+.memory-dates dt:not(:first-child) { margin-top: 20px; }
 .memory-nav { justify-content: flex-end; }
 @media (max-width: 359px) {
-    .memory-content { padding-left: 24px; padding-right: 24px; }
-    .memory-dates { font-size: 22px; }
-    .garden-empty { font-size: 22px; }
+    .flower-register-content, .flower-end-content, .memory-content { padding-left: 16px; padding-right: 16px; }
+    .garden-flowers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .flower-nav { gap: 8px; }
+    .round-link { font-size: 14px; }
+    .memory-card { padding: 20px; }
 }

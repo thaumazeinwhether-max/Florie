@@ -2,8 +2,8 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>思い出 | Florie</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Memory | Florie</title>
     <link rel="stylesheet" th:href="@{/css/auth.css}">
     <link rel="stylesheet" th:href="@{/css/flower.css}">
 </head>
@@ -14,14 +14,14 @@
         <article class="memory-card">
             <h1>Memory</h1>
             <div class="memory-flower">
-                <div th:replace="~{fragments/flower-layout :: flowerPlaceholder}"></div>
+                <img th:replace="~{fragments/flower-layout :: flowerIllustration(${flower.flowerType})}">
+                <h2 th:text="${flower.flowerNickname}"></h2>
                 <p th:text="${flower.flowerType.flowerName}"></p>
-                <p th:text="${flower.flowerNickname}"></p>
             </div>
             <dl class="memory-dates">
-                <dt>お世話を始めた日</dt>
+                <dt>お迎えした日</dt>
                 <dd><time th:datetime="${flower.startedOn}" th:text="${#temporals.format(flower.startedOn, 'yyyy/MM/dd')}"></time></dd>
-                <dt>お世話を終えた日</dt>
+                <dt>お別れした日</dt>
                 <dd><time th:datetime="${flower.endedOn}" th:text="${#temporals.format(flower.endedOn, 'yyyy/MM/dd')}"></time></dd>
             </dl>
         </article>

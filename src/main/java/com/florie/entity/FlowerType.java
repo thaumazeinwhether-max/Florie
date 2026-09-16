@@ -48,6 +48,28 @@ public class FlowerType {
         return illustrationPath;
     }
 
+    // DBのローカル画像パスを優先する。未設定の既存マスタも、再投入せず表示できる。
+    // 表示専用の値であり、illustrationPathそのものやDBは変更しない。
+    public String getDisplayIllustrationPath() {
+        if (illustrationPath != null && illustrationPath.matches("/images/[a-zA-Z0-9/_-]+\\.(svg|png|webp)")) {
+            return illustrationPath;
+        }
+        if (flowerName == null) {
+            return "";
+        }
+        switch (flowerName) {
+            case "ガーベラ": return "/images/flowers/gerbera.svg";
+            case "バラ": return "/images/flowers/rose.svg";
+            case "チューリップ": return "/images/flowers/tulip.svg";
+            case "カーネーション": return "/images/flowers/carnation.svg";
+            case "ひまわり": return "/images/flowers/sunflower.svg";
+            case "ダリア": return "/images/flowers/dahlia.svg";
+            case "アネモネ": return "/images/flowers/anemone.svg";
+            case "ラナンキュラス": return "/images/flowers/ranunculus.svg";
+            default: return "";
+        }
+    }
+
     public void setIllustrationPath(String illustrationPath) {
         this.illustrationPath = illustrationPath;
     }

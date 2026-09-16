@@ -2,7 +2,7 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>お花を登録 | Florie</title>
     <link rel="stylesheet" th:href="@{/css/auth.css}">
     <link rel="stylesheet" th:href="@{/css/flower.css}">
@@ -12,6 +12,7 @@
     <header th:replace="~{fragments/flower-layout :: header}"></header>
     <main class="flower-register-content">
         <h1>お花を登録</h1>
+        <p class="page-intro">これから一緒に過ごす、一輪を選びましょう。</p>
         <form th:action="@{/flowers}" th:object="${flowerRegisterForm}" method="post" novalidate>
             <div class="error notice" role="alert" th:if="${#fields.hasGlobalErrors()}">
                 <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
@@ -21,7 +22,10 @@
                 <p class="error" id="flower-type-error" th:errors="*{flowerTypeId}"></p>
                 <label class="flower-choice" th:each="type : ${flowerTypes}">
                     <input type="radio" th:field="*{flowerTypeId}" th:value="${type.flowerTypeId}" required aria-describedby="flower-type-error">
-                    <span class="choice-name" th:text="${type.flowerName}"></span>
+                    <span class="choice-name">
+                        <img th:replace="~{fragments/flower-layout :: flowerIllustration(${type})}">
+                        <span th:text="${type.flowerName}"></span>
+                    </span>
                     <span class="choice-guidance" th:text="${type.careGuidance}"></span>
                 </label>
                 <p th:if="${#lists.isEmpty(flowerTypes)}" class="error">お花の種類を読み込めませんでした。時間をおいて開き直してください。</p>
