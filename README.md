@@ -10,13 +10,40 @@ Florieは、**一輪挿し初心者向けのお花のお世話サポートWebア
 
 初期版の主要機能とUIは実装済みです。主要なユーザーフローは実MySQL・実ブラウザで確認しています。
 
+## 完成画面
+
+<p align="center">
+  <img src="docs/screenshots/01_home.png" width="220" alt="Home画面">
+  <img src="docs/screenshots/04_flower-register.png" width="220" alt="花登録画面">
+</p>
+
+<p align="center">
+  <sub>Home ／ 花登録</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/02_garden.png" width="220" alt="Garden画面">
+  <img src="docs/screenshots/03_memory.png" width="220" alt="Memory画面">
+</p>
+
+<p align="center">
+  <sub>Garden ／ Memory</sub>
+</p>
+
 ## 2. 開発背景・目的
 
 文系・IT未経験の大学生が、SE就職活動に向けて、要件定義 → 基本設計 → 詳細設計 → 実装 → テストまでの一連の開発を経験するために制作しました。
 
 完成後もJava・SQL・Spring Bootの学習教材として使えるよう、短く高度なコードより、処理を順番に追える明示的なコードを重視しています。役割ごとにクラスを分け、必要な箇所には「なぜその処理が必要か」を日本語で説明しています。
 
-開発を通して、画面からDBまでの処理の流れ、SQLとEntityの対応、認証と認可の違い、複数の更新をまとめるトランザクション、正常系・異常系のテストを学習しました。
+
+開発を通して、画面からDBまでの処理の流れ、SQLとEntityの対応、認証・認可、トランザクション、正常系・異常系のテストを、実際の設計・実装・動作確認を通じて経験しました。完成後は、本アプリのコードを教材としてJava・SQL・Spring Bootなどの理解をさらに深めています。
+
+### AIの活用
+
+開発では、ChatGPTやCodexを設計内容の整理、実装支援、コードレビュー、テスト観点の整理などに活用しました。生成された内容をそのまま採用するのではなく、要件・仕様との整合性を確認し、実際に動作確認とテストを行ったうえで採否を判断しました。
+
+本プロジェクトでは、AIを利用して完成させることだけでなく、完成後にコードを自分で説明できる状態にすることを重視しています。
 
 ## 3. 主な機能
 
