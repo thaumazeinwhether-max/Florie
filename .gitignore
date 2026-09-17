@@ -1,7 +1,7 @@
-# ビルド結果
+# ビルド成果物
 /target/
 
-# エディタの個人設定
+# エディタ・IDEの個人設定
 /.idea/
 /.vscode/
 *.iml
@@ -9,7 +9,7 @@
 .project
 .settings/
 
-# ローカルの秘密情報とログ
+# ローカルの秘密情報・設定・ログ
 .env
 .env.*
 !.env.example
@@ -18,7 +18,7 @@
 /src/main/resources/application-local.yaml
 *.log
 
-# OSが作るファイル
+# OSが生成するファイル
 Thumbs.db
 .DS_Store
 
@@ -26,5 +26,6 @@ Thumbs.db
 /AGENTS.md
 /docs/00_Florie_実装前整理資料.md
 
+# 生成物・学習用作業フォルダ
 output/
 textbook_work/
